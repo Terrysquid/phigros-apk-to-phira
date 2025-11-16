@@ -1,4 +1,4 @@
-import json, base64, struct, UnityPy, io, yaml
+import os, json, base64, struct, UnityPy, io, yaml
 from math import floor, ceil
 from zipfile import ZipFile, ZIP_DEFLATED
 from pathlib import Path
@@ -44,9 +44,10 @@ def generate_yaml(song, index):
     }
     return yaml.safe_dump(data, allow_unicode=True, sort_keys=False)
 
+os.makedirs("input", exist_ok=True)
 input_dir = Path("./input")
 apk_paths = [p for p in input_dir.iterdir() if p.is_file() and p.suffix == ".apk"]
-if len(apk_paths) == 0: raise Exception("No apk file in input directory")
+if len(apk_paths) == 0: raise Exception("Need apk file in input/ directory")
 apk_path = apk_paths[0]
 print(f"Info: Using {apk_path} as input")
 
@@ -202,6 +203,7 @@ while output_difficulty_max == None:
             print("再次", end="")
 
 print("Info: Starting to output")
+os.makedirs("output", exist_ok=True)
 output_count = 0
 for song_id,song in songs.items():
     if song_id != output_id and output_id != "": continue
@@ -233,4 +235,4 @@ for song_id,song in songs.items():
             zf.writestr("chart.json", output_chart)
             zf.writestr("illustration.jpg", output_illustration)
             zf.writestr("info.yml", generate_yaml(song, index))
-print(f"Info: {output_count} zip file(s) written to output directory")
+print(f"Info: {output_count} zip file(s) written to output/ directory")
