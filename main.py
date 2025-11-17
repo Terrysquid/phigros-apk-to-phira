@@ -29,7 +29,7 @@ class Song:
         self.charter = []
 
 def sanitize_windows(name):
-    re.sub(r'[\\/:*?"<>|]', '_', name)
+    return re.sub(r'[\\/:*?"<>|]', '_', name)
 
 def generate_yaml(song, index):
     data = {
