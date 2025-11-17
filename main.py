@@ -184,12 +184,12 @@ if len(output_levels) != 0:
 output_difficulty_min = None
 output_difficulty_max = None
 if output_id != "":
-    output_difficulty_min = 0
+    output_difficulty_min = -float("inf")
     output_difficulty_max = float("inf")
 while output_difficulty_min == None:
     query_difficulty_min = input("筛选定数最小值 (可留空): ")
     if query_difficulty_min == "":
-        output_difficulty_min = 0
+        output_difficulty_min = -float("inf")
     else:
         try:
             output_difficulty_min = ceil(float(query_difficulty_min)*10)/10
