@@ -66,7 +66,7 @@ with ZipFile(apk_path) as zf:
 data_key = base64.b64decode(j["m_KeyDataString"])
 data_bucket = base64.b64decode(j["m_BucketDataString"])
 data_entry = base64.b64decode(j["m_EntryDataString"])
-with open("assembly-csharp.json") as f: # extracted using Il2CppDumper and TypeTreeGenerator
+with open("typetree.json") as f: # extracted using Il2CppDumper and TypeTreeGenerator
     typetree = json.load(f)
 print("Info: Input files loaded")
 
