@@ -2,6 +2,7 @@ import os, json, base64, struct, UnityPy, io, yaml
 from math import floor, ceil
 from zipfile import ZipFile, ZIP_DEFLATED
 from pathlib import Path
+from tqdm import tqdm
 
 def i32(b,p): return struct.unpack_from("<i",b,p)[0], p+4 # int32
 def u32(b,p): return struct.unpack_from("<I",b,p)[0], p+4 # unsigned int32
@@ -202,22 +203,23 @@ while output_difficulty_max == None:
             print(f"{query_difficulty_max} 非数值")
             print("再次", end="")
 
+output_indexes = []
 output_count = 0
 for song_id,song in songs.items():
     if not (song_id == output_id or output_id == ""): continue
+    indexes = []
     for index in range(len(song.levels)):
         if not (song.levels[index] in output_levels or len(output_levels) == 0): continue
         if not (output_difficulty_min <= song.difficulty[index] <= output_difficulty_max and song.difficulty[index] != 0): continue
+        indexes.append(index)
         output_count += 1
-print(f"Info: {output_count} charts found")
+    if indexes != []: output_indexes.append((song_id,song,indexes))
+print(f"Info: {len(output_indexes)} songs ({output_count} charts) found")
 
 print("Info: Starting to output")
 os.makedirs("output", exist_ok=True)
-for song_id,song in songs.items():
-    if not (song_id == output_id or output_id == ""): continue
-    for index in range(len(song.levels)):
-        if not (song.levels[index] in output_levels or len(output_levels) == 0): continue
-        if not (output_difficulty_min <= song.difficulty[index] <= output_difficulty_max and song.difficulty[index] != 0): continue
+for song_id,song,indexes in tqdm(output_indexes):
+    for index in indexes:
         with ZipFile(apk_path) as zf:
             with zf.open(song.music) as f:
                 objs = [obj for obj in UnityPy.load(f.read()).objects if obj.type.name not in ["AssetBundle","Sprite"]]
