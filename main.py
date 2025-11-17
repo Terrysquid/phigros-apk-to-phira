@@ -1,4 +1,4 @@
-import os, json, base64, struct, UnityPy, io, yaml
+import os, json, base64, struct, UnityPy, io, yaml, re
 from math import floor, ceil
 from zipfile import ZipFile, ZIP_DEFLATED
 from pathlib import Path
@@ -27,6 +27,9 @@ class Song:
         self.difficulty = []
         self.charts = []
         self.charter = []
+
+def sanitize_windows(name):
+    re.sub(r'[\\/:*?"<>|]', '_', name)
 
 def generate_yaml(song, index):
     data = {
@@ -239,7 +242,7 @@ for song_id,song,indexes in tqdm(output_indexes):
                 buf = io.BytesIO()
                 data.image.save(buf, "JPEG")
                 output_illustration = buf.getvalue()
-        with ZipFile(f"output/[{song.levels[index]} {song.difficulty[index]:.1f}] {song.name} ({song_id}).zip", "w", compression=ZIP_DEFLATED) as zf:
+        with ZipFile(f"output/[{song.levels[index]} {song.difficulty[index]:.1f}] {sanitize_windows(song.name)} ({song_id}).zip", "w", compression=ZIP_DEFLATED) as zf:
             zf.writestr("music.wav", output_music)
             zf.writestr("chart.json", output_chart)
             zf.writestr("illustration.jpg", output_illustration)
