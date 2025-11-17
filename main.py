@@ -182,6 +182,10 @@ output_levels = [i for i in input("筛选难度 (空格分隔, 如'IN AT Legacy'
 if len(output_levels) != 0:
     print(f"已设为 {output_levels}")
 output_difficulty_min = None
+output_difficulty_max = None
+if output_id != "":
+    output_difficulty_min = 0
+    output_difficulty_max = float("inf")
 while output_difficulty_min == None:
     query_difficulty_min = input("筛选定数最小值 (可留空): ")
     if query_difficulty_min == "":
@@ -193,7 +197,6 @@ while output_difficulty_min == None:
         except:
             print(f"{query_difficulty_min} 非数值")
             print("再次", end="")
-output_difficulty_max = None
 while output_difficulty_max == None:
     query_difficulty_max = input("筛选定数最大值 (可留空): ")
     if query_difficulty_max == "":
@@ -217,7 +220,7 @@ for song_id,song in songs.items():
         indexes.append(index)
         output_count += 1
     if indexes != []: output_indexes.append((song_id,song,indexes))
-print(f"Info: {len(output_indexes)} songs ({output_count} charts) found")
+print(f"Info: {len(output_indexes)} song(s) ({output_count} chart(s)) found")
 
 print("Info: Starting to output")
 os.makedirs("output", exist_ok=True)
