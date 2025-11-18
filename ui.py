@@ -21,10 +21,10 @@ path_frame = ttk.LabelFrame(root, text="选择文件")
 path_frame.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
 path_frame.columnconfigure(0, weight=1)
 #
-path_entry = ttk.Entry(path_frame, width=30)
+path_entry = ttk.Entry(path_frame, width=40)
 path_entry.grid(row=0, column=0, sticky="ew")
 #
-path_button = ttk.Button(path_frame, text="选择.apk", command=select_path)
+path_button = ttk.Button(path_frame, text="选择.apk", width=8, command=select_path)
 path_button.grid(row=0, column=1, sticky="w")
 
 search_frame = ttk.LabelFrame(root, text="搜索曲目")
@@ -32,7 +32,7 @@ search_frame.grid(row=1, column=0, padx=10, pady=(0,10), sticky="ew")
 search_frame.columnconfigure(1, weight=1)
 #
 ttk.Label(search_frame, text="曲目名称/ID: ").grid(row=0, column=0, sticky="w")
-id_entry = ttk.Entry(search_frame, width=30)
+id_entry = ttk.Entry(search_frame, width=40)
 id_entry.grid(row=0, column=1, sticky="ew")
 #
 ttk.Label(search_frame, text="筛选难度: ").grid(row=1, column=0, sticky="w")
@@ -54,12 +54,22 @@ difficulty_max_entry.grid(row=0, column=2, sticky="w")
 
 candidates_frame = ttk.LabelFrame(root, text="候选曲目")
 candidates_frame.grid(row=2, column=0, padx=10, pady=(0,10), sticky="nsew")
+candidates_frame.columnconfigure(0, weight=1)
+candidates_frame.rowconfigure(0, weight=1)
+#
 candidates_listbox = tk.Listbox(candidates_frame, height=6)
 candidates_listbox.grid(row=0, column=0, sticky="nsew")
 candidates_scrollbar = ttk.Scrollbar(candidates_frame, orient="vertical", command=candidates_listbox.yview)
 candidates_scrollbar.grid(row=0, column=1, sticky="ns")
 candidates_listbox.config(yscrollcommand=candidates_scrollbar.set)
-candidates_frame.columnconfigure(0, weight=1)
-candidates_frame.rowconfigure(0, weight=1)
+
+bottom_frame = ttk.Frame(root)
+bottom_frame.grid(row=3, column=0, padx=10, pady=(0,10), sticky="ew")
+bottom_frame.columnconfigure(1, weight=1)
+#
+status_label = ttk.Label(bottom_frame, text="就绪")
+status_label.grid(row=0, column=0, sticky="w")
+export_button = ttk.Button(bottom_frame, text="导出", width=8, command=lambda: None)
+export_button.grid(row=0, column=1, sticky="e")
 
 root.mainloop()
