@@ -268,6 +268,8 @@ def select_path():
     if apk_path:
         path_var.set(apk_path)
         load_assets()
+        for child in level_frame.winfo_children(): child.destroy()
+        level_vars.clear()
         search() # to load level_frame
     path_button.config(state="normal")
 
