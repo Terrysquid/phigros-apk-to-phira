@@ -98,7 +98,7 @@ def load_assets():
             song.previewEndTime = i["previewEndTime"]
             assert len(song.difficulty) == len(song.charter) == len(song.levels)
             song.charts = [""] * len(song.levels)
-    print("Info: Total number of songs:", len(songs))
+    print(f"Info: Total number of songs: {len(songs)}")
 
     output = []
     p_bucket = 0x0 # pointer
@@ -162,7 +162,7 @@ def load_assets():
 
     return songs
 
-def filter_songs():
+def search():
     output_id = id_var.get()
     output_levels = [level for level in level_vars if level_vars[level].get()]
     output_difficulty_min = difficulty_min_var.get()
@@ -197,6 +197,13 @@ def filter_songs():
         song_count += trigger
     print(f"Info: {song_count} song(s) ({len(output_indexes)} chart(s)) found")
     set_info(f"找到 {song_count} 首曲目 ({len(output_indexes)} 张谱面)")
+
+def clear_search():
+    id_var.set("")
+    for l in level_vars: level_vars[l].set(False)
+    difficulty_min_var.set("")
+    difficulty_max_var.set("")
+    search()
 
 def output():
     print("Info: Starting to output")
@@ -234,7 +241,7 @@ def select_path():
     if not apk_path: return
     path_var.set(apk_path)
     load_assets()
-    filter_songs() # to load level_frame
+    search() # to load level_frame
 
 def select_candidate(event):
     selection = event.widget.curselection()
@@ -249,10 +256,8 @@ def double_click_candidate(event):
     song = songs[song_id]
     id_var.set(song_id)
     level = song.levels[index]
-    for l in level_vars:
-        if l == level: level_vars[l].set(True)
-        elif l != level: level_vars[l].set(False)
-    filter_songs()
+    for l in level_vars: level_vars[l].set(l == level)
+    search()
 
 def set_info(info):
     info_var.set(info)
@@ -280,11 +285,11 @@ search_frame.columnconfigure(1, weight=1)
 ttk.Label(search_frame, text="曲目名称/ID: ").grid(row=0, column=0, sticky="w")
 id_var = tk.StringVar()
 id_entry = ttk.Entry(search_frame, width=40, textvariable=id_var)
-id_entry.grid(row=0, column=1, columnspan=2, sticky="ew")
+id_entry.grid(row=0, column=1, columnspan=3, sticky="ew")
 #
 ttk.Label(search_frame, text="筛选难度: ").grid(row=1, column=0, sticky="w")
 level_frame = ttk.Frame(search_frame)
-level_frame.grid(row=1, column=1, columnspan=2, sticky="w")
+level_frame.grid(row=1, column=1, columnspan=3, sticky="w")
 level_vars = {}
 #
 ttk.Label(search_frame, text="筛选定数: ").grid(row=2, column=0, sticky="w")
@@ -298,8 +303,10 @@ difficulty_max_var = tk.StringVar()
 difficulty_max_entry = ttk.Entry(difficulty_frame, justify="center", width=4, textvariable=difficulty_max_var)
 difficulty_max_entry.grid(row=0, column=2, sticky="w")
 #
-search_button = ttk.Button(search_frame, text="搜索", width=8, command=filter_songs)
-search_button.grid(row=2, column=2, sticky="e")
+clear_button = ttk.Button(search_frame, text="清空", width=8, command=clear_search)
+clear_button.grid(row=2, column=2, sticky="e")
+search_button = ttk.Button(search_frame, text="搜索", width=8, command=search)
+search_button.grid(row=2, column=3, sticky="e")
 
 candidates_frame = ttk.LabelFrame(root, text="候选曲目")
 candidates_frame.grid(row=2, column=0, padx=10, pady=(0,10), sticky="nsew")
@@ -323,7 +330,5 @@ info_label = ttk.Label(bottom_frame, textvariable=info_var)
 info_label.grid(row=0, column=0, sticky="w")
 export_button = ttk.Button(bottom_frame, text="导出", width=8, command=output)
 export_button.grid(row=0, column=1, sticky="e")
-
-set_info("就绪")
 
 root.mainloop()
