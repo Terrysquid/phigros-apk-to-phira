@@ -270,7 +270,7 @@ def select_path():
         load_assets()
         for child in level_frame.winfo_children(): child.destroy()
         level_vars.clear()
-        search() # to load level_frame
+        clear_search() # to load level_frame
     path_button.config(state="normal")
 
 def select_candidate(event):
