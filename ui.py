@@ -231,16 +231,28 @@ def output():
 
 def select_path():
     apk_path = filedialog.askopenfilename(title="选择 APK 文件", filetypes=[("APK 文件", "*.apk")])
-    if apk_path:
-        path_var.set(apk_path)
-        load_assets()
-        filter_songs() # to load level_frame
+    if not apk_path: return
+    path_var.set(apk_path)
+    load_assets()
+    filter_songs() # to load level_frame
 
 def select_candidate(event):
     selection = event.widget.curselection()
     if not selection: return
     song_id,index = output_indexes[selection[0]]
     id_var.set(song_id)
+
+def double_click_candidate(event):
+    selection = event.widget.curselection()
+    if not selection: return
+    song_id,index = output_indexes[selection[0]]
+    song = songs[song_id]
+    id_var.set(song_id)
+    level = song.levels[index]
+    for l in level_vars:
+        if l == level: level_vars[l].set(True)
+        elif l != level: level_vars[l].set(False)
+    filter_songs()
 
 def set_info(info):
     info_var.set(info)
@@ -297,6 +309,7 @@ candidates_frame.rowconfigure(0, weight=1)
 candidates_listbox = tk.Listbox(candidates_frame, height=10)
 candidates_listbox.grid(row=0, column=0, sticky="nsew")
 candidates_listbox.bind("<<ListboxSelect>>", select_candidate)
+candidates_listbox.bind("<Double-Button-1>", double_click_candidate)
 candidates_scrollbar = ttk.Scrollbar(candidates_frame, orient="vertical", command=candidates_listbox.yview)
 candidates_scrollbar.grid(row=0, column=1, sticky="ns")
 candidates_listbox.config(yscrollcommand=candidates_scrollbar.set)
