@@ -2,9 +2,9 @@ import os, json, base64, struct, UnityPy, io, yaml, re
 from math import floor, ceil
 from zipfile import ZipFile, ZIP_DEFLATED
 from pathlib import Path
-from tqdm import tqdm
 import tkinter as tk
 from tkinter import ttk, filedialog
+from threading import Thread
 try:
     import ctypes
     ctypes.windll.shcore.SetProcessDpiAwareness(1)
@@ -74,6 +74,7 @@ def load_assets():
         typetree = json.load(f)
     print("Info: Input files found")
 
+    songs.clear()
     game_information = None
     for obj in env.objects:
         if obj.type.name != "MonoBehaviour": continue
@@ -82,7 +83,6 @@ def load_assets():
             game_information = obj.read_typetree(typetree["GameInformation"])
             break
     assert game_information != None
-
     for k,v in game_information["song"].items():
         if k == "otherSongs": continue
         for i in v:
@@ -205,49 +205,77 @@ def clear_search():
     difficulty_max_var.set("")
     search()
 
-def output():
-    print("Info: Starting to output")
-    os.makedirs("output", exist_ok=True)
-    for song_id,index in tqdm(output_indexes):
-        song = songs[song_id]
-        with ZipFile(path_var.get()) as zf:
-            with zf.open(song.music) as f:
-                objs = [obj for obj in UnityPy.load(f.read()).objects if obj.type.name not in ["AssetBundle","Sprite"]]
-                assert len(objs) == 1
-                data = objs[0].read()
-                assert len(data.samples) == 1
-                (output_music,) = data.samples.values()
-            with zf.open(song.charts[index]) as f:
-                objs = [obj for obj in UnityPy.load(f.read()).objects if obj.type.name not in ["AssetBundle","Sprite"]]
-                assert len(objs) == 1
-                data = objs[0].read()
-                output_chart = bytes(data.m_Script.encode("utf-8"))
-            with zf.open(song.illustration) as f:
-                objs = [obj for obj in UnityPy.load(f.read()).objects if obj.type.name not in ["AssetBundle","Sprite"]]
-                assert len(objs) == 1
-                data = objs[0].read()
-                buf = io.BytesIO()
-                data.image.save(buf, "JPEG")
-                output_illustration = buf.getvalue()
-        with ZipFile(f"output/[{song.levels[index]} {song.difficulty[index]:.1f}] {sanitize_windows(song.name)} ({song_id}).zip", "w", compression=ZIP_DEFLATED) as zf:
-            zf.writestr("music.wav", output_music)
-            zf.writestr("chart.json", output_chart)
-            zf.writestr("illustration.jpg", output_illustration)
-            zf.writestr("info.yml", generate_yaml(song, index))
-    print(f"Info: {len(output_indexes)} zip file(s) written to output/ directory")
+def export():
+    if not path_var.get():
+        set_info("导出失败: 无 APK 文件")
+        return
+    if not output_indexes:
+        set_info("导出失败: 无候选曲目")
+        return
+    output_indexes_ = list(output_indexes) # copy of output_indexes, will not be modified
+    apk_path = path_var.get()
+    path_button.config(state="disabled")
+    clear_button.config(state="disabled")
+    search_button.config(state="disabled")
+    candidates_listbox.config(state="disabled")
+    export_button.config(state="disabled")
+    progress_bar.config(maximum=len(output_indexes_), value=0)
+    set_info(f"正在导出: 0/{len(output_indexes_)}")
+    print("Info: Starting to export")
+
+    def worker():
+        os.makedirs("output", exist_ok=True)
+        for output_count,(song_id,index) in enumerate(output_indexes_, start=1):
+            song = songs[song_id]
+            with ZipFile(apk_path) as zf:
+                with zf.open(song.music) as f:
+                    objs = [obj for obj in UnityPy.load(f.read()).objects if obj.type.name not in ["AssetBundle","Sprite"]]
+                    assert len(objs) == 1
+                    data = objs[0].read()
+                    assert len(data.samples) == 1
+                    (output_music,) = data.samples.values()
+                with zf.open(song.charts[index]) as f:
+                    objs = [obj for obj in UnityPy.load(f.read()).objects if obj.type.name not in ["AssetBundle","Sprite"]]
+                    assert len(objs) == 1
+                    data = objs[0].read()
+                    output_chart = bytes(data.m_Script.encode("utf-8"))
+                with zf.open(song.illustration) as f:
+                    objs = [obj for obj in UnityPy.load(f.read()).objects if obj.type.name not in ["AssetBundle","Sprite"]]
+                    assert len(objs) == 1
+                    data = objs[0].read()
+                    buf = io.BytesIO()
+                    data.image.save(buf, "JPEG")
+                    output_illustration = buf.getvalue()
+            with ZipFile(f"output/[{song.levels[index]} {song.difficulty[index]:.1f}] {sanitize_windows(song.name)} ({song_id}).zip", "w", compression=ZIP_DEFLATED) as zf:
+                zf.writestr("music.wav", output_music)
+                zf.writestr("chart.json", output_chart)
+                zf.writestr("illustration.jpg", output_illustration)
+                zf.writestr("info.yml", generate_yaml(song, index))
+            root.after(0, lambda cnt=output_count: progress_bar.config(value=cnt))
+            root.after(0, lambda cnt=output_count: set_info(f"正在导出: {cnt}/{len(output_indexes_)}"))
+        print(f"Info: {len(output_indexes_)} zip file(s) written to output/ directory")
+        root.after(0, lambda: set_info(f"已导出 {len(output_indexes_)} 张谱面至 output/ 文件夹"))
+        root.after(0, lambda: path_button.config(state="normal"))
+        root.after(0, lambda: clear_button.config(state="normal"))
+        root.after(0, lambda: search_button.config(state="normal"))
+        root.after(0, lambda: candidates_listbox.config(state="normal"))
+        root.after(0, lambda: export_button.config(state="normal"))
+    Thread(target=worker, daemon=True).start()
 
 def select_path():
+    path_button.config(state="disabled")
     apk_path = filedialog.askopenfilename(title="选择 APK 文件", filetypes=[("APK 文件", "*.apk")])
-    if not apk_path: return
-    path_var.set(apk_path)
-    load_assets()
-    search() # to load level_frame
+    if apk_path:
+        path_var.set(apk_path)
+        load_assets()
+        search() # to load level_frame
+    path_button.config(state="normal")
 
 def select_candidate(event):
     selection = event.widget.curselection()
-    if not selection: return
-    song_id,index = output_indexes[selection[0]]
-    id_var.set(song_id)
+    if selection:
+        song_id,index = output_indexes[selection[0]]
+        id_var.set(song_id)
 
 def double_click_candidate(event):
     selection = event.widget.curselection()
@@ -321,14 +349,17 @@ candidates_scrollbar = ttk.Scrollbar(candidates_frame, orient="vertical", comman
 candidates_scrollbar.grid(row=0, column=1, sticky="ns")
 candidates_listbox.config(yscrollcommand=candidates_scrollbar.set)
 
+progress_bar = ttk.Progressbar(root)
+progress_bar.grid(row=3, column=0, padx=10, pady=(0,10), sticky="ew")
+
 bottom_frame = ttk.Frame(root)
-bottom_frame.grid(row=3, column=0, padx=10, pady=(0,10), sticky="ew")
+bottom_frame.grid(row=4, column=0, padx=10, pady=(0,10), sticky="ew")
 bottom_frame.columnconfigure(1, weight=1)
 #
 info_var = tk.StringVar()
 info_label = ttk.Label(bottom_frame, textvariable=info_var)
 info_label.grid(row=0, column=0, sticky="w")
-export_button = ttk.Button(bottom_frame, text="导出", width=8, command=output)
+export_button = ttk.Button(bottom_frame, text="导出", width=8, command=export)
 export_button.grid(row=0, column=1, sticky="e")
 
 root.mainloop()
