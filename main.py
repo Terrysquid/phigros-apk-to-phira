@@ -27,8 +27,8 @@ class Song:
         self.name = ""
         self.music = None
         self.composer = ""
-        self.previewTime = 0.0
-        self.previewEndTime = 0.0
+        self.preview_time = 0.0
+        self.preview_end_time = 0.0
         self.illustration = None
         self.illustration_lowres = None
         self.illustration_blur = None
@@ -53,8 +53,8 @@ def generate_yaml(song, index):
         "format": "pgr",
         "music": "music.wav",
         "illustration": "illustration.jpg",
-        "previewStart": song.previewTime,
-        "previewEnd": song.previewEndTime
+        "previewStart": song.preview_time,
+        "previewEnd": song.preview_end_time
     }
     return yaml.safe_dump(data, allow_unicode=True, sort_keys=False)
 
@@ -93,8 +93,8 @@ def load_assets():
             song.charter = i["charter"]
             song.composer = i["composer"]
             song.levels = i["levels"]
-            song.previewTime = i["previewTime"]
-            song.previewEndTime = i["previewEndTime"]
+            song.preview_time = i["previewTime"]
+            song.preview_end_time = i["previewEndTime"]
             assert len(song.difficulty) == len(song.charter) == len(song.levels)
             song.charts = [""] * len(song.levels)
     print(f"Info: Total number of songs: {len(songs)}")
