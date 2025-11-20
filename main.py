@@ -74,7 +74,6 @@ def load_assets():
         typetree = json.load(f)
     print("Info: Input files found")
 
-    songs.clear()
     game_information = None
     for obj in env.objects:
         if obj.type.name != "MonoBehaviour": continue
@@ -269,6 +268,9 @@ def select_path():
         path_button.config(state="normal")
         return
     path_var.set(apk_path)
+    songs.clear()
+    for child in level_frame.winfo_children(): child.destroy()
+    level_vars.clear()
     try:
         load_assets()
     except Exception as e:
@@ -276,8 +278,6 @@ def select_path():
         set_info(f"加载资源失败")
         path_button.config(state="normal")
         return
-    for child in level_frame.winfo_children(): child.destroy()
-    level_vars.clear()
     clear_search() # to load level_frame
     path_button.config(state="normal")
 
