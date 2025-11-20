@@ -265,12 +265,20 @@ def export():
 def select_path():
     path_button.config(state="disabled")
     apk_path = filedialog.askopenfilename(title="选择 APK 文件", filetypes=[("APK 文件", "*.apk")])
-    if apk_path:
-        path_var.set(apk_path)
+    if not apk_path:
+        path_button.config(state="normal")
+        return
+    path_var.set(apk_path)
+    try:
         load_assets()
-        for child in level_frame.winfo_children(): child.destroy()
-        level_vars.clear()
-        clear_search() # to load level_frame
+    except Exception as e:
+        print(f"Error: Failed to load assets: {e}")
+        set_info(f"加载资源失败")
+        path_button.config(state="normal")
+        return
+    for child in level_frame.winfo_children(): child.destroy()
+    level_vars.clear()
+    clear_search() # to load level_frame
     path_button.config(state="normal")
 
 def select_candidate(event):
