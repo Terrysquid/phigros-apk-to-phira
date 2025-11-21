@@ -29,9 +29,9 @@ class Song:
         self.composer = ""
         self.preview_time = 0.0
         self.preview_end_time = 0.0
-        self.illustration = None
-        self.illustration_lowres = None
-        self.illustration_blur = None
+        self.illustration = ""
+        self.illustration_lowres = ""
+        self.illustration_blur = ""
         self.illustrator = ""
         self.levels = []
         self.difficulty = []
@@ -229,31 +229,28 @@ def export():
     set_info(f"正在导出: 0/{len(output_indexes_)}")
     print("Info: Starting to export")
 
+    def get_data(zf, path, description):
+        assert path != "", f"Missing {description}"
+        with zf.open(path) as f:
+            objs = [obj for obj in UnityPy.load(f.read()).objects if obj.type.name not in ["AssetBundle","Sprite"]]
+            assert len(objs) == 1, f"Expected 1 object in {path}, got {len(objs)}"
+            data = objs[0].read()
+        return data
+
     def worker():
         os.makedirs("output", exist_ok=True)
         for output_count,(song_id,index) in enumerate(output_indexes_, start=1):
             song = songs[song_id]
             with ZipFile(apk_path) as zf:
-                assert song.music[index] != "", f"Missing music for song {song.name}"
-                with zf.open(song.music[index]) as f:
-                    objs = [obj for obj in UnityPy.load(f.read()).objects if obj.type.name not in ["AssetBundle","Sprite"]]
-                    assert len(objs) == 1, f"Multiple objects in {song.music[index]}"
-                    data = objs[0].read()
-                    assert len(data.samples) == 1, f"Multiple samples in {song.music[index]}"
-                    (output_music,) = data.samples.values()
-                assert song.charts[index] != "", f"Missing chart for song {song.name}"
-                with zf.open(song.charts[index]) as f:
-                    objs = [obj for obj in UnityPy.load(f.read()).objects if obj.type.name not in ["AssetBundle","Sprite"]]
-                    assert len(objs) == 1, f"Multiple objects in {song.charts[index]}"
-                    data = objs[0].read()
-                    output_chart = bytes(data.m_Script.encode("utf-8"))
-                with zf.open(song.illustration) as f:
-                    objs = [obj for obj in UnityPy.load(f.read()).objects if obj.type.name not in ["AssetBundle","Sprite"]]
-                    assert len(objs) == 1, f"Multiple objects in {song.illustration}"
-                    data = objs[0].read()
-                    buf = io.BytesIO()
-                    data.image.save(buf, "JPEG")
-                    output_illustration = buf.getvalue()
+                data = get_data(zf, song.music[index], f"music for song {song.name} {song.levels[index]}")
+                assert len(data.samples) == 1, f"Expected 1 sample in {song.music[index]}, got {len(data.samples)}"
+                (output_music,) = data.samples.values()
+                data = get_data(zf, song.charts[index], f"chart for song {song.name} {song.levels[index]}")
+                output_chart = data.m_Script.encode()
+                data = get_data(zf, song.illustration, f"illustration for song {song.name}")
+                buf = io.BytesIO()
+                data.image.save(buf, "JPEG")
+                output_illustration = buf.getvalue()
             with ZipFile(f"output/[{song.levels[index]} {song.difficulty[index]:.1f}] {sanitize_windows(song.name)} ({song_id}).zip", "w", compression=ZIP_DEFLATED) as zf:
                 zf.writestr("music.wav", output_music)
                 zf.writestr("chart.json", output_chart)
