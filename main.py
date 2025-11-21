@@ -25,7 +25,7 @@ class Song:
     def __init__(self):
         self.key = ""
         self.name = ""
-        self.music = None
+        self.music = []
         self.composer = ""
         self.preview_time = 0.0
         self.preview_end_time = 0.0
@@ -96,6 +96,7 @@ def load_assets():
             song.preview_time = i["previewTime"]
             song.preview_end_time = i["previewEndTime"]
             assert len(song.difficulty) == len(song.charter) == len(song.levels)
+            song.music = [""] * len(song.levels)
             song.charts = [""] * len(song.levels)
     print(f"Info: Total number of songs: {len(songs)}")
 
@@ -144,8 +145,14 @@ def load_assets():
         suffix = Path(file_name).suffix
         assert suffix in [".wav",".json",".jpg"]
         if suffix == ".wav":
-            assert file_name == "music.wav"
-            song.music = path
+            if file_name == "music.wav":
+                song.music = [path if i == "" else i for i in song.music]
+            else:
+                assert file_name[:6] == "music_"
+                level = file_name[6:-4] # music_IN.wav -> IN (for Cristalisia)
+                if level not in song.levels:
+                    continue
+                song.music[song.levels.index(level)] = path
         elif suffix == ".json":
             assert file_name[:6] == "Chart_"
             level = file_name[6:-5] # Chart_IN.json -> IN
@@ -227,12 +234,14 @@ def export():
         for output_count,(song_id,index) in enumerate(output_indexes_, start=1):
             song = songs[song_id]
             with ZipFile(apk_path) as zf:
-                with zf.open(song.music) as f:
+                assert song.music[index] != ""
+                with zf.open(song.music[index]) as f:
                     objs = [obj for obj in UnityPy.load(f.read()).objects if obj.type.name not in ["AssetBundle","Sprite"]]
                     assert len(objs) == 1
                     data = objs[0].read()
                     assert len(data.samples) == 1
                     (output_music,) = data.samples.values()
+                assert song.charts[index] != ""
                 with zf.open(song.charts[index]) as f:
                     objs = [obj for obj in UnityPy.load(f.read()).objects if obj.type.name not in ["AssetBundle","Sprite"]]
                     assert len(objs) == 1
