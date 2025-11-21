@@ -81,7 +81,7 @@ def load_assets():
         if data.m_Script.read().m_Name == "GameInformation":
             game_information = obj.read_typetree(typetree["GameInformation"])
             break
-    assert game_information != None
+    assert game_information != None, "GameInformation not found"
     for k,v in game_information["song"].items():
         if k == "otherSongs": continue
         for i in v:
@@ -95,7 +95,7 @@ def load_assets():
             song.levels = i["levels"]
             song.preview_time = i["previewTime"]
             song.preview_end_time = i["previewEndTime"]
-            assert len(song.difficulty) == len(song.charter) == len(song.levels)
+            assert len(song.difficulty) == len(song.charter) == len(song.levels), f"List length inconsistency with {len(song.difficulty)} {len(song.charter)} {len(song.levels)}"
             song.music = [""] * len(song.levels)
             song.charts = [""] * len(song.levels)
     print(f"Info: Total number of songs: {len(songs)}")
@@ -106,7 +106,7 @@ def load_assets():
     for i in range(count):
         p_key, p_bucket = u32(data_bucket, p_bucket)
         typ = data_key[p_key]; p_key += 1
-        assert typ in [0,1,4]
+        assert typ in [0,1,4], f"Unknown typ = {typ}"
         if typ == 0: # ascii
             key, p_key = utf8(data_key, p_key)
         elif typ == 1: # mixed
@@ -118,7 +118,7 @@ def load_assets():
             p_entry, p_bucket = u32(data_bucket, p_bucket)
             p_entry = 4 + 28 * p_entry + 8
             if ii == 0: entry = i32(data_entry, p_entry)[0]
-            if ii > 0: assert entry == i32(data_entry, p_entry)[0]
+            if ii > 0: assert entry == i32(data_entry, p_entry)[0], "Different entries referred error"
         output.append((key,entry))
     for i, j in enumerate(output):
         key, entry = j
@@ -132,7 +132,7 @@ def load_assets():
     temp = len(output)
     # remove unity GUIDs (half of them are GUIDs)
     output = [i for i in output if not (len(i[0]) == 32 and all(c in "0123456789abcdef" for c in i[0]))]
-    assert len(output) * 2 == temp
+    assert len(output) * 2 == temp, f"GUID removal error/inconsistency with {temp} -> {len(output)}"
     # remove non-assets
     output = [(i[0][14:],i[1]) for i in output if i[0].startswith("Assets/Tracks/") and not i[0].startswith("Assets/Tracks/#")]
 
@@ -143,24 +143,24 @@ def load_assets():
         song = songs[song_id]
         path = "assets/aa/Android/" + value
         suffix = Path(file_name).suffix
-        assert suffix in [".wav",".json",".jpg"]
+        assert suffix in [".wav",".json",".jpg"], f"Unknown suffix {suffix}"
         if suffix == ".wav":
             if file_name == "music.wav":
                 song.music = [path if i == "" else i for i in song.music]
             else:
-                assert file_name[:6] == "music_"
+                assert file_name[:6] == "music_", f"Unknown music file {file_name}"
                 level = file_name[6:-4] # music_IN.wav -> IN (for Cristalisia)
                 if level not in song.levels:
                     continue
                 song.music[song.levels.index(level)] = path
         elif suffix == ".json":
-            assert file_name[:6] == "Chart_"
+            assert file_name[:6] == "Chart_", f"Unknown chart file {file_name}"
             level = file_name[6:-5] # Chart_IN.json -> IN
             if level not in song.levels:
                 continue
             song.charts[song.levels.index(level)] = path
         elif suffix == ".jpg":
-            assert file_name in ["Illustration.jpg","IllustrationLowRes.jpg","IllustrationBlur.jpg"]
+            assert file_name in ["Illustration.jpg","IllustrationLowRes.jpg","IllustrationBlur.jpg"], f"Unknown illustration file {file_name}"
             if file_name == "Illustration.jpg": song.illustration = path
             elif file_name == "IllustrationLowRes.jpg": song.illustration_lowres = path # will not be used
             elif file_name == "IllustrationBlur.jpg": song.illustration_blur = path # will not be used
@@ -234,22 +234,22 @@ def export():
         for output_count,(song_id,index) in enumerate(output_indexes_, start=1):
             song = songs[song_id]
             with ZipFile(apk_path) as zf:
-                assert song.music[index] != ""
+                assert song.music[index] != "", f"Missing music for song {song.name}"
                 with zf.open(song.music[index]) as f:
                     objs = [obj for obj in UnityPy.load(f.read()).objects if obj.type.name not in ["AssetBundle","Sprite"]]
-                    assert len(objs) == 1
+                    assert len(objs) == 1, f"Multiple objects in {song.music[index]}"
                     data = objs[0].read()
-                    assert len(data.samples) == 1
+                    assert len(data.samples) == 1, f"Multiple samples in {song.music[index]}"
                     (output_music,) = data.samples.values()
-                assert song.charts[index] != ""
+                assert song.charts[index] != "", f"Missing chart for song {song.name}"
                 with zf.open(song.charts[index]) as f:
                     objs = [obj for obj in UnityPy.load(f.read()).objects if obj.type.name not in ["AssetBundle","Sprite"]]
-                    assert len(objs) == 1
+                    assert len(objs) == 1, f"Multiple objects in {song.charts[index]}"
                     data = objs[0].read()
                     output_chart = bytes(data.m_Script.encode("utf-8"))
                 with zf.open(song.illustration) as f:
                     objs = [obj for obj in UnityPy.load(f.read()).objects if obj.type.name not in ["AssetBundle","Sprite"]]
-                    assert len(objs) == 1
+                    assert len(objs) == 1, f"Multiple objects in {song.illustration}"
                     data = objs[0].read()
                     buf = io.BytesIO()
                     data.image.save(buf, "JPEG")
