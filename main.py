@@ -70,7 +70,7 @@ def load_assets():
     data_key = base64.b64decode(j["m_KeyDataString"])
     data_bucket = base64.b64decode(j["m_BucketDataString"])
     data_entry = base64.b64decode(j["m_EntryDataString"])
-    with open("typetree.json") as f: # extracted using Il2CppDumper and TypeTreeGenerator
+    with open("typetree.json") as f: # extracted using Il2CppDumper and TypeTreeGenerator, from libil2cpp.so and global-metadata.dat
         typetree = json.load(f)
     print("Info: Input files found")
 
@@ -83,7 +83,7 @@ def load_assets():
             break
     assert game_information != None, "GameInformation not found"
     for k,v in game_information["song"].items():
-        if k == "otherSongs": continue
+        if k == "otherSongs": continue # Skip Introduction
         for i in v:
             song = songs.setdefault(i["songsId"], Song())
             song.key = i["songsKey"]
