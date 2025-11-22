@@ -1,3 +1,6 @@
+__pycache__/
 input/
 output/
-__pycache__/
+*.apk
+globalgamemanagers.assets
+config.json
