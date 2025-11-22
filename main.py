@@ -270,9 +270,24 @@ def export():
 def select_path():
     path_button.config(state="disabled")
     apk_path = filedialog.askopenfilename(title="选择 APK 文件", filetypes=[("APK 文件", "*.apk")])
-    if not apk_path:
-        path_button.config(state="normal")
-        return
+    if load_path(apk_path):
+        with open("config.json", "w", encoding="utf-8") as f:
+            json.dump({"apk_path": apk_path}, f, ensure_ascii=False, indent=2)
+    path_button.config(state="normal")
+
+def set_path():
+    if not os.path.exists("config.json"): return
+    with open("config.json", "r", encoding="utf-8") as f:
+        config = json.load(f)
+    apk_path = config.get("apk_path", "")
+    load_path(apk_path)
+
+def load_path(apk_path):
+    if not apk_path: return False
+    if not os.path.exists(apk_path):
+        print(f"Error: APK file not found: {apk_path}")
+        set_info("APK 文件不存在")
+        return False
     path_var.set(apk_path)
     songs.clear()
     for child in level_frame.winfo_children(): child.destroy()
@@ -282,10 +297,9 @@ def select_path():
     except Exception as e:
         print(f"Error: Failed to load assets: {e}")
         set_info(f"加载资源失败")
-        path_button.config(state="normal")
-        return
+        return False
     clear_search() # to load level_frame
-    path_button.config(state="normal")
+    return True
 
 def select_candidate(event):
     selection = event.widget.curselection()
@@ -378,4 +392,5 @@ info_label.grid(row=0, column=0, sticky="w")
 export_button = ttk.Button(bottom_frame, text="导出", width=8, command=export)
 export_button.grid(row=0, column=1, sticky="e")
 
+set_path()
 root.mainloop()
