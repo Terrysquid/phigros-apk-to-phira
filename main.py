@@ -239,9 +239,9 @@ def export():
 
     def worker():
         os.makedirs("output", exist_ok=True)
-        for output_count,(song_id,index) in enumerate(output_indexes_, start=1):
-            song = songs[song_id]
-            with ZipFile(apk_path) as zf:
+        with ZipFile(apk_path) as zf:
+            for output_count,(song_id,index) in enumerate(output_indexes_, start=1):
+                song = songs[song_id]
                 data = get_data(zf, song.music[index], f"music for song {song.name} {song.levels[index]}")
                 assert len(data.samples) == 1, f"Expected 1 sample in {song.music[index]}, got {len(data.samples)}"
                 (output_music,) = data.samples.values()
@@ -251,13 +251,13 @@ def export():
                 buf = io.BytesIO()
                 data.image.save(buf, "JPEG")
                 output_illustration = buf.getvalue()
-            with ZipFile(f"output/[{song.levels[index]} {song.difficulty[index]:.1f}] {sanitize_windows(song.name)} ({song_id}).zip", "w", compression=ZIP_DEFLATED) as zf:
-                zf.writestr("music.wav", output_music)
-                zf.writestr("chart.json", output_chart)
-                zf.writestr("illustration.jpg", output_illustration)
-                zf.writestr("info.yml", generate_yaml(song, index))
-            root.after(0, lambda cnt=output_count: progress_bar.config(value=cnt))
-            root.after(0, lambda cnt=output_count: set_info(f"正在导出: {cnt}/{len(output_indexes_)}"))
+                with ZipFile(f"output/[{song.levels[index]} {song.difficulty[index]:.1f}] {sanitize_windows(song.name)} ({song_id}).zip", "w", compression=ZIP_DEFLATED) as output_zf:
+                    output_zf.writestr("music.wav", output_music)
+                    output_zf.writestr("chart.json", output_chart)
+                    output_zf.writestr("illustration.jpg", output_illustration)
+                    output_zf.writestr("info.yml", generate_yaml(song, index))
+                root.after(0, lambda cnt=output_count: progress_bar.config(value=cnt))
+                root.after(0, lambda cnt=output_count: set_info(f"正在导出: {cnt}/{len(output_indexes_)}"))
         print(f"Info: {len(output_indexes_)} zip file(s) written to output/ directory")
         root.after(0, lambda: set_info(f"已导出 {len(output_indexes_)} 张谱面至 output/ 文件夹"))
         root.after(0, lambda: path_button.config(state="normal"))
