@@ -39,7 +39,7 @@ function drawLine(real_time) {
     let cy = 0;
     let angle = 0;
     let alpha = 1;
-    let time = real_time * chart.judgeLineList[l].bpm * 0.54;
+    let time = real_time * chart.judgeLineList[l].bpm / 60 * 32;
     let events = chart.judgeLineList[l].judgeLineMoveEvents;
     for (let i = 0; i < events.length; i++) {
       let e = events[i];
