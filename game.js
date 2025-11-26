@@ -40,7 +40,7 @@ async function loadChart() {
   chart = await res.json();
 }
 
-function drawLine(real_time) {
+function drawLines(realTime) {
   if (!chart) return;
   ctx.strokeStyle = "#FFFFBB";
   ctx.lineWidth = (1 / 160) * canvas.height;
@@ -50,7 +50,7 @@ function drawLine(real_time) {
     let cy = 0;
     let angle = 0;
     let alpha = 1;
-    let time = ((real_time * line.bpm) / 60) * 32;
+    let time = ((realTime * line.bpm) / 60) * 32;
     let events = line.judgeLineMoveEvents;
     for (let i = 0; i < events.length; i++) {
       let e = events[i];
@@ -101,50 +101,57 @@ function drawLine(real_time) {
     ctx.moveTo(-lineLength, 0);
     ctx.lineTo(lineLength, 0);
     ctx.stroke();
-    ctx.lineWidth = (1 / 80) * canvas.height;
-    let notes = line.notesAbove;
-    for (let i = 0; i < notes.length; i++) {
-      let note = notes[i];
-      let colors = ["#0AC3FF", "#F0ED69", "#0AC3FF", "#FE4365"];
-      ctx.strokeStyle = colors[note.type - 1];
-      ctx.fillStyle = colors[note.type - 1];
-      let dPosition = note.floorPosition - floorPosition;
-      let noteSize = 1.0; // scale from normal
-      if (time <= note.time) {
-        ctx.globalAlpha = 1;
-        ctx.beginPath();
-        ctx.moveTo(
-          (-noteSize + note.positionX) * (1 / 18) * canvas.width,
-          -dPosition * 0.6 * canvas.height
-        );
-        ctx.lineTo(
-          (noteSize + note.positionX) * (1 / 18) * canvas.width,
-          -dPosition * 0.6 * canvas.height
-        );
-        ctx.stroke();
-      }
-      if (note.type == 3 && time <= note.time + note.holdTime) {
-        ctx.globalAlpha = 0.6;
-        ctx.beginPath();
-        let holdPosition =
-          (note.speed / ((32 * line.bpm) / 60)) * note.holdTime;
-        ctx.fillRect(
-          (-noteSize + note.positionX) * (1 / 18) * canvas.width,
-          Math.min(0, -(dPosition + holdPosition) * 0.6 * canvas.height),
-          noteSize * 2 * (1 / 18) * canvas.width,
-          Math.min(0, -dPosition * 0.6 * canvas.height) -
-            Math.min(0, -(dPosition + holdPosition) * 0.6 * canvas.height)
-        );
+
+    ctx.lineWidth = (1 / 80) * canvas.height; // thick notes
+    drawNotes(line.notesAbove, false);
+    ctx.rotate(Math.PI);
+    drawNotes(line.notesBelow, true);
+    ctx.restore();
+
+    function drawNotes(notes, below) {
+      for (let i = 0; i < notes.length; i++) {
+        let note = notes[i];
+        let colors = ["#0AC3FF", "#F0ED69", "#0AC3FF", "#FE4365"];
+        ctx.strokeStyle = colors[note.type - 1];
+        ctx.fillStyle = colors[note.type - 1];
+        let dPosition = note.floorPosition - floorPosition;
+        let noteSize = 1.0; // scale from normal
+        let positionX = below ? -note.positionX : note.positionX;
+        if (time <= note.time) {
+          ctx.globalAlpha = 1;
+          ctx.beginPath();
+          ctx.moveTo(
+            (-noteSize + positionX) * (1 / 18) * canvas.width,
+            -dPosition * 0.6 * canvas.height
+          );
+          ctx.lineTo(
+            (noteSize + positionX) * (1 / 18) * canvas.width,
+            -dPosition * 0.6 * canvas.height
+          );
+          ctx.stroke();
+        }
+        if (note.type == 3 && time <= note.time + note.holdTime) {
+          ctx.globalAlpha = 0.6;
+          ctx.beginPath();
+          let holdPosition =
+            (note.speed / ((32 * line.bpm) / 60)) * note.holdTime;
+          ctx.fillRect(
+            (-noteSize + positionX) * (1 / 18) * canvas.width,
+            Math.min(0, -(dPosition + holdPosition) * 0.6 * canvas.height),
+            noteSize * 2 * (1 / 18) * canvas.width,
+            Math.min(0, -dPosition * 0.6 * canvas.height) -
+              Math.min(0, -(dPosition + holdPosition) * 0.6 * canvas.height)
+          );
+        }
       }
     }
-    ctx.restore();
   }
 }
 
 function loop() {
-  let real_time = audio.currentTime;
+  let realTime = audio.currentTime + 147;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawLine(real_time);
+  drawLines(realTime);
   if (!audio.ended) {
     requestAnimationFrame(loop);
   }
