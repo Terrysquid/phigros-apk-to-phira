@@ -149,7 +149,7 @@ function drawLines(realTime) {
 }
 
 function loop() {
-  let realTime = audio.currentTime + 147;
+  let realTime = audio.currentTime;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawLines(realTime);
   if (!audio.ended) {
