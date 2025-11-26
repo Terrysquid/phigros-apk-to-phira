@@ -1,7 +1,7 @@
 let canvas;
 let ctx;
-let startTime = null;
-let chart = null;
+let startTime;
+let chart, music;
 let lineLength = 0;
 
 window.addEventListener("load", init);
@@ -14,14 +14,24 @@ async function init() {
   canvas = document.getElementById("canvas");
   ctx = canvas.getContext("2d");
   resizeCanvas();
+  audio = new Audio("music.wav");
+  bgImage = new Image();
+  bgImage.src = "illustration.jpg";
   await loadChart();
-  requestAnimationFrame(loop);
+  canvas.addEventListener(
+    "click",
+    async () => {
+      audio.currentTime = 0;
+      await audio.play();
+      requestAnimationFrame(loop);
+    },
+    { once: true }
+  );
 }
 
 function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  ctx.setTransform(1, 0, 0, -1, 0, canvas.height);
+  canvas.width = canvas.getBoundingClientRect().width;
+  canvas.height = canvas.getBoundingClientRect().height;
   lineLength = 3 * canvas.width;
 }
 
@@ -32,15 +42,16 @@ async function loadChart() {
 
 function drawLine(real_time) {
   if (!chart) return;
-  ctx.strokeStyle = "#FDFDBA";
+  ctx.strokeStyle = "#FFFFBB";
   ctx.lineWidth = (1 / 160) * canvas.height;
   for (let l = 0; l < chart.judgeLineList.length; l++) {
+    let line = chart.judgeLineList[l];
     let cx = 0;
     let cy = 0;
     let angle = 0;
     let alpha = 1;
-    let time = real_time * chart.judgeLineList[l].bpm / 60 * 32;
-    let events = chart.judgeLineList[l].judgeLineMoveEvents;
+    let time = ((real_time * line.bpm) / 60) * 32;
+    let events = line.judgeLineMoveEvents;
     for (let i = 0; i < events.length; i++) {
       let e = events[i];
       if (time >= e.startTime && time <= e.endTime) {
@@ -48,21 +59,21 @@ function drawLine(real_time) {
         let x = (e.end - e.start) * p + e.start;
         let y = (e.end2 - e.start2) * p + e.start2;
         cx = x * canvas.width;
-        cy = y * canvas.height;
+        cy = (1 - y) * canvas.height;
         break;
       }
     }
-    events = chart.judgeLineList[l].judgeLineRotateEvents;
+    events = line.judgeLineRotateEvents;
     for (let i = 0; i < events.length; i++) {
       let e = events[i];
       if (time >= e.startTime && time <= e.endTime) {
         let p = (time - e.startTime) / (e.endTime - e.startTime);
         let ang = (e.end - e.start) * p + e.start;
-        angle = (ang * Math.PI) / 180;
+        angle = -(ang * Math.PI) / 180;
         break;
       }
     }
-    events = chart.judgeLineList[l].judgeLineDisappearEvents;
+    events = line.judgeLineDisappearEvents;
     for (let i = 0; i < events.length; i++) {
       let e = events[i];
       if (time >= e.startTime && time <= e.endTime) {
@@ -71,24 +82,40 @@ function drawLine(real_time) {
         break;
       }
     }
+    ctx.save();
     ctx.globalAlpha = alpha;
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
     ctx.beginPath();
-    ctx.moveTo(
-      cx - lineLength * Math.cos(angle),
-      cy - lineLength * Math.sin(angle)
-    );
-    ctx.lineTo(
-      cx + lineLength * Math.cos(angle),
-      cy + lineLength * Math.sin(angle)
-    );
+    ctx.moveTo(-lineLength, 0);
+    ctx.lineTo(lineLength, 0);
     ctx.stroke();
+    ctx.globalAlpha = 1;
+    let notes = line.notesAbove;
+    for (let i = 0; i < notes.length; i++) {
+      let note = notes[i];
+      ctx.strokeStyle = ["#51fcff", "#FFFFBB", "#5d5bff", "#ff8787"][
+        note.type - 1
+      ];
+      let dt = time - note.time;
+      ctx.beginPath();
+      ctx.moveTo(-50 + note.positionX * 80, dt * 8);
+      ctx.lineTo(50 + note.positionX * 80, dt * 8);
+      if (note.type == 3) {
+        ctx.moveTo(note.positionX * 80, dt * 8);
+        ctx.lineTo(note.positionX * 80, (dt - note.holdTime) * 8);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 }
 
-function loop(timestamp) {
-  if (startTime == null) startTime = timestamp;
-  let real_time = ((timestamp - startTime) / 1000);
+function loop() {
+  let real_time = audio.currentTime;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawLine(real_time);
-  requestAnimationFrame(loop);
+  if (!audio.ended) {
+    requestAnimationFrame(loop);
+  }
 }

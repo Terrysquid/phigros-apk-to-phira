@@ -1,4 +1,6 @@
-html, body {
+html,
+body {
+  display: flex;
   margin: 0;
   padding: 0;
   height: 100%;
@@ -7,10 +9,12 @@ html, body {
   touch-action: none;
   font-family: system-ui;
   color: #fff;
+  justify-content: center;
 }
 #canvas {
   display: block;
   width: 100vw;
+  max-width: calc(100vh * 16 / 9);
   height: 100vh;
   background: #000;
 }
