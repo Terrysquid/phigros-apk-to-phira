@@ -4,3 +4,9 @@ output/
 *.apk
 globalgamemanagers.assets
 config.json
+chart.json
+music.wav
+illustration.jpg
+index.html
+style.css
+game.js
