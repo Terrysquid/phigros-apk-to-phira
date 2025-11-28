@@ -38,7 +38,27 @@ function resizeCanvas() {
 async function loadChart() {
   const res = await fetch("chart.json");
   chart = await res.json();
-  console.log(chart);
+  for (let l = 0; l < chart.judgeLineList.length; l++) {
+    let line = chart.judgeLineList[l];
+    line.notes = []; // merge notesAbove and notesBelow using time
+    let i = 0;
+    let j = 0;
+    while (i < line.notesAbove.length || j < line.notesBelow.length) {
+      if (
+        !(j < line.notesBelow.length) ||
+        (i < line.notesAbove.length &&
+          line.notesAbove[i].time <= line.notesBelow[j].time)
+      ) {
+        line.notes.push({ ...line.notesAbove[i], direction: 1 });
+        i += 1;
+      } else {
+        line.notes.push({ ...line.notesBelow[j], direction: -1 });
+        j += 1;
+      }
+    }
+    delete line.notesAbove;
+    delete line.notesBelow;
+  }
 }
 
 function drawLines(realTime) {
@@ -105,23 +125,21 @@ function drawLines(realTime) {
     ctx.stroke();
 
     ctx.lineWidth = (1 / 80) * canvas.height; // thick notes
-    drawNotes(line.notesAbove, false);
-    ctx.rotate(Math.PI);
-    drawNotes(line.notesBelow, true);
+    drawNotes(line.notes);
     ctx.restore();
 
-    function drawNotes(notes, below) {
+    function drawNotes(notes) {
       for (let i = 0; i < notes.length; i++) {
         let note = notes[i];
         let colors = ["#0AC3FF", "#F0ED69", "#0AC3FF", "#FE4365"];
         ctx.strokeStyle = colors[note.type - 1];
         ctx.fillStyle = colors[note.type - 1];
+        let xPosition = note.positionX;
         let yPosition = note.floorPosition - floorPosition;
         let noteSize = 1.0;
         let fadeTime = 0.16;
-        let xPosition = below ? -note.positionX : note.positionX;
-        let xScale = (1 / 18) * canvas.width; // 0.0562
-        let yScale = 0.6 * canvas.height;
+        let xScale = (0.9 / 16) * canvas.width;
+        let yScale = 0.6 * canvas.height * note.direction;
         if (note.type != 3) {
           // non-hold
           if (time > note.time + fadeTime * tps) continue;
