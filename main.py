@@ -83,7 +83,6 @@ def load_assets():
             break
     assert game_information != None, "GameInformation not found"
     for k,v in game_information["song"].items():
-        if k == "otherSongs": continue # Skip Introduction
         for i in v:
             song = songs.setdefault(i["songsId"], Song())
             song.key = i["songsKey"]
