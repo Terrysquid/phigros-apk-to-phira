@@ -21,6 +21,10 @@ def f32(b,p): return struct.unpack_from("<f",b,p)[0], p+4 # float32
 def utf8(b,p): length, p = u32(b,p); return b[p:p+length].decode("utf-8"), p+length
 def utf16(b,p): length, p = u32(b,p); return b[p:p+length].decode("utf-16"), p+length
 
+def sanitize_windows(name):
+    return re.sub(r'[\\/:*?"<>|]', '_', name)
+def plural(n): return "s" if n != 1 else ""
+
 class Song:
     def __init__(self):
         self.key = ""
@@ -37,9 +41,6 @@ class Song:
         self.difficulty = []
         self.charts = []
         self.charter = []
-
-def sanitize_windows(name):
-    return re.sub(r'[\\/:*?"<>|]', '_', name)
 
 def generate_yaml(song, index):
     data = {
@@ -200,7 +201,7 @@ def search():
                 ttk.Checkbutton(level_frame, text=level, variable=level_vars[level]).grid(row=0, column=len(level_vars)-1, sticky="w")
             trigger = 1
         song_count += trigger
-    print(f"Info: {song_count} song(s) ({len(output_indexes)} chart(s)) found")
+    print(f"Info: {song_count} song{plural(song_count)} ({len(output_indexes)} chart{plural(len(output_indexes))}) found")
     set_info(f"找到 {song_count} 首曲目 ({len(output_indexes)} 张谱面)")
 
 def clear_search():
@@ -257,7 +258,7 @@ def export():
                     output_zf.writestr("info.yml", generate_yaml(song, index))
                 root.after(0, lambda cnt=output_count: progress_bar.config(value=cnt))
                 root.after(0, lambda cnt=output_count: set_info(f"正在导出: {cnt}/{len(output_indexes_)}"))
-        print(f"Info: {len(output_indexes_)} zip file(s) written to output/ directory")
+        print(f"Info: {len(output_indexes_)} zip file{plural(len(output_indexes_))} written to output/ directory")
         root.after(0, lambda: set_info(f"已导出 {len(output_indexes_)} 张谱面至 output/ 文件夹"))
         root.after(0, lambda: path_button.config(state="normal"))
         root.after(0, lambda: clear_button.config(state="normal"))
