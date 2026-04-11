@@ -27,15 +27,16 @@ def plural(n): return "s" if n != 1 else ""
 
 class Song:
     def __init__(self):
-        self.key = ""
+        self.key = "" # will not be used
         self.name = ""
+        self.default_music = ""
         self.music = []
         self.composer = ""
         self.preview_time = 0.0
         self.preview_end_time = 0.0
         self.illustration = ""
-        self.illustration_lowres = ""
-        self.illustration_blur = ""
+        self.illustration_lowres = "" # will not be used
+        self.illustration_blur = "" # will not be used
         self.illustrator = ""
         self.levels = []
         self.difficulty = []
@@ -46,7 +47,7 @@ def generate_yaml(song, index):
     data = {
         "name": song.name,
         "difficulty": song.difficulty[index],
-        "level": song.levels[index] + f" Lv.{floor(song.difficulty[index])}",
+        "level": song.levels[index] + (" Lv.?" if song.difficulty[index] == 0 else f" Lv.{floor(song.difficulty[index])}"),
         "charter": song.charter[index],
         "composer": song.composer,
         "illustrator": song.illustrator,
@@ -57,7 +58,36 @@ def generate_yaml(song, index):
         "previewStart": song.preview_time,
         "previewEnd": song.preview_end_time
     }
+    data = {k: v for k, v in data.items() if v != ""}
     return yaml.safe_dump(data, allow_unicode=True, sort_keys=False)
+
+def get_song(song_id):
+    if song_id in songs:
+        return songs[song_id]
+    m = re.match(r"^(.*)\.(\d+)$", song_id)
+    if m and m.group(1) + ".0" in songs:
+        return clone_song(songs[m.group(1) + ".0"], song_id)
+    return clone_song(None, song_id)
+
+def clone_song(src, song_id):
+    song = Song()
+    song.name = song_id.split(".")[0]
+    if src:
+        song.name = src.name
+        song.illustration = src.illustration
+        song.illustration_lowres = src.illustration_lowres
+        song.illustration_blur = src.illustration_blur
+        song.illustrator = src.illustrator
+    songs[song_id] = song
+    return song
+
+def add_level(song, level):
+    if level not in song.levels:
+        song.levels.append(level)
+        song.difficulty.append(0.0)
+        song.charter.append("")
+        song.music.append(song.default_music)
+        song.charts.append("")
 
 def load_assets():
     with ZipFile(path_var.get()) as zf:
@@ -135,29 +165,27 @@ def load_assets():
     assert len(output) * 2 == temp, f"GUID removal error/inconsistency with {temp} -> {len(output)}"
     # remove non-assets
     output = [(i[0][14:],i[1]) for i in output if i[0].startswith("Assets/Tracks/") and not i[0].startswith("Assets/Tracks/#")]
+    # sort output, prioritize 1. in songs 2. alphabetic, prevent special songs being treated earlier than normal songs
+    output.sort(key=lambda x: (x[0].split("/")[0] not in songs, x[0].split("/")[0]))
 
     for key, value in output:
         song_id, file_name = key.split("/")
-        if song_id not in songs:
-            continue
-        song = songs[song_id]
+        song = get_song(song_id)
         path = "assets/aa/Android/" + value
         suffix = Path(file_name).suffix
         assert suffix in [".wav",".json",".jpg"], f"Unknown suffix {suffix}"
         if suffix == ".wav":
             if file_name == "music.wav":
-                song.music = [path if i == "" else i for i in song.music]
+                song.default_music = path
             else:
                 assert file_name[:6] == "music_", f"Unknown music file {file_name}"
                 level = file_name[6:-4] # music_IN.wav -> IN (for Cristalisia)
-                if level not in song.levels:
-                    continue
+                add_level(song, level)
                 song.music[song.levels.index(level)] = path
         elif suffix == ".json":
             assert file_name[:6] == "Chart_", f"Unknown chart file {file_name}"
             level = file_name[6:-5] # Chart_IN.json -> IN
-            if level not in song.levels:
-                continue
+            add_level(song, level)
             song.charts[song.levels.index(level)] = path
         elif suffix == ".jpg":
             assert file_name in ["Illustration.jpg","IllustrationLowRes.jpg","IllustrationBlur.jpg"], f"Unknown illustration file {file_name}"
@@ -165,8 +193,6 @@ def load_assets():
             elif file_name == "IllustrationLowRes.jpg": song.illustration_lowres = path # will not be used
             elif file_name == "IllustrationBlur.jpg": song.illustration_blur = path # will not be used
     print("Info: Asset files located")
-
-    return songs
 
 def search():
     output_id = id_var.get()
@@ -193,7 +219,8 @@ def search():
         for index in range(len(song.levels)):
             level = song.levels[index]
             if not (level in output_levels or len(output_levels) == 0): continue
-            if not (output_difficulty_min <= song.difficulty[index] <= output_difficulty_max and song.difficulty[index] != 0): continue
+            if not (output_difficulty_min <= song.difficulty[index] <= output_difficulty_max): continue
+            if song.charts[index] == "": continue # use "no chart" as filter condition instead of "difficulty = 0"
             output_indexes.append((song_id,index))
             candidates_listbox.insert(tk.END, f"[{song.levels[index]} {song.difficulty[index]:.1f}] {song.name} ({song_id})")
             if level not in level_vars:
@@ -242,8 +269,8 @@ def export():
         with ZipFile(apk_path) as zf:
             for output_count,(song_id,index) in enumerate(output_indexes_, start=1):
                 song = songs[song_id]
-                data = get_data(zf, song.music[index], f"music for song {song.name} {song.levels[index]}")
-                assert len(data.samples) == 1, f"Expected 1 sample in {song.music[index]}, got {len(data.samples)}"
+                data = get_data(zf, song.music[index] or song.default_music, f"music for song {song.name} {song.levels[index]}")
+                assert len(data.samples) == 1, f"Expected 1 sample in {song.music[index] or song.default_music}, got {len(data.samples)}"
                 (output_music,) = data.samples.values()
                 data = get_data(zf, song.charts[index], f"chart for song {song.name} {song.levels[index]}")
                 output_chart = data.m_Script.encode()
