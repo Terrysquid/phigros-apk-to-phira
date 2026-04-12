@@ -24,6 +24,8 @@ def utf16(b,p): length, p = u32(b,p); return b[p:p+length].decode("utf-16"), p+l
 def sanitize_windows(name):
     return re.sub(r'[\\/:*?"<>|]', '_', name)
 def plural(n): return "s" if n != 1 else ""
+def level_group(level):
+    return level if level in ["EZ", "HD", "IN", "AT"] else "Other"
 
 class Song:
     def __init__(self):
@@ -218,14 +220,11 @@ def search():
         trigger = 0
         for index in range(len(song.levels)):
             level = song.levels[index]
-            if not (level in output_levels or len(output_levels) == 0): continue
+            if not (level_group(level) in output_levels or len(output_levels) == 0): continue
             if not (output_difficulty_min <= song.difficulty[index] <= output_difficulty_max): continue
             if song.charts[index] == "": continue # use "no chart" as filter condition instead of "difficulty = 0"
             output_indexes.append((song_id,index))
             candidates_listbox.insert(tk.END, f"[{song.levels[index]} {song.difficulty[index]:.1f}] {song.name} ({song_id})")
-            if level not in level_vars:
-                level_vars[level] = tk.BooleanVar(value=False)
-                ttk.Checkbutton(level_frame, text=level, variable=level_vars[level]).grid(row=0, column=len(level_vars)-1, sticky="w")
             trigger = 1
         song_count += trigger
     print(f"Info: {song_count} song{plural(song_count)} ({len(output_indexes)} chart{plural(len(output_indexes))}) found")
@@ -234,6 +233,9 @@ def search():
 def clear_search():
     id_var.set("")
     for l in level_vars: level_vars[l].set(False)
+    special_var.set(False)
+    difficulty_min_entry.config(state="normal")
+    difficulty_max_entry.config(state="normal")
     difficulty_min_var.set("")
     difficulty_max_var.set("")
     search()
@@ -317,8 +319,6 @@ def load_path(apk_path):
         return False
     path_var.set(apk_path)
     songs.clear()
-    for child in level_frame.winfo_children(): child.destroy()
-    level_vars.clear()
     try:
         load_assets()
     except Exception as e:
@@ -340,12 +340,24 @@ def double_click_candidate(event):
     song_id,index = output_indexes[selection[0]]
     song = songs[song_id]
     id_var.set(song_id)
-    level = song.levels[index]
+    level = level_group(song.levels[index])
     for l in level_vars: level_vars[l].set(l == level)
     search()
 
 def set_info(info):
     info_var.set(info)
+
+def toggle_special():
+    if special_var.get():
+        difficulty_min_var.set("0")
+        difficulty_max_var.set("0")
+        difficulty_min_entry.config(state="readonly")
+        difficulty_max_entry.config(state="readonly")
+    else:
+        difficulty_min_entry.config(state="normal")
+        difficulty_max_entry.config(state="normal")
+        difficulty_min_var.set("")
+        difficulty_max_var.set("")
 
 root = tk.Tk()
 root.title("Phigros 谱面提取")
@@ -376,6 +388,9 @@ ttk.Label(search_frame, text="筛选难度: ").grid(row=1, column=0, sticky="w")
 level_frame = ttk.Frame(search_frame)
 level_frame.grid(row=1, column=1, columnspan=3, sticky="w")
 level_vars = {}
+for level in ["EZ", "HD", "IN", "AT", "Other"]:
+    level_vars[level] = tk.BooleanVar(value=False)
+    ttk.Checkbutton(level_frame, text=level, variable=level_vars[level]).grid(row=0, column=len(level_vars)-1, sticky="w")
 #
 ttk.Label(search_frame, text="筛选定数: ").grid(row=2, column=0, sticky="w")
 difficulty_frame = ttk.Frame(search_frame)
@@ -387,6 +402,9 @@ ttk.Label(difficulty_frame, text="~").grid(row=0, column=1, sticky="w")
 difficulty_max_var = tk.StringVar()
 difficulty_max_entry = ttk.Entry(difficulty_frame, justify="center", width=4, textvariable=difficulty_max_var)
 difficulty_max_entry.grid(row=0, column=2, sticky="w")
+special_var = tk.BooleanVar(value=False)
+special_check = ttk.Checkbutton(difficulty_frame, text="SP", variable=special_var, command=toggle_special)
+special_check.grid(row=0, column=3, sticky="w")
 #
 clear_button = ttk.Button(search_frame, text="清空", width=8, command=clear_search)
 clear_button.grid(row=2, column=2, sticky="e")
