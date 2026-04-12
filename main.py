@@ -358,6 +358,7 @@ def toggle_special():
         difficulty_max_entry.config(state="normal")
         difficulty_min_var.set("")
         difficulty_max_var.set("")
+    search()
 
 root = tk.Tk()
 root.title("Phigros 谱面提取")
@@ -390,7 +391,7 @@ level_frame.grid(row=1, column=1, columnspan=3, sticky="w")
 level_vars = {}
 for level in ["EZ", "HD", "IN", "AT", "Other"]:
     level_vars[level] = tk.BooleanVar(value=False)
-    ttk.Checkbutton(level_frame, text=level, variable=level_vars[level]).grid(row=0, column=len(level_vars)-1, sticky="w")
+    ttk.Checkbutton(level_frame, text=level, variable=level_vars[level], command=search).grid(row=0, column=len(level_vars)-1, sticky="w")
 #
 ttk.Label(search_frame, text="筛选定数: ").grid(row=2, column=0, sticky="w")
 difficulty_frame = ttk.Frame(search_frame)
