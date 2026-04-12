@@ -128,7 +128,7 @@ def load_assets():
             assert len(song.difficulty) == len(song.charter) == len(song.levels), f"List length inconsistency with {len(song.difficulty)} {len(song.charter)} {len(song.levels)}"
             song.music = [""] * len(song.levels)
             song.charts = [""] * len(song.levels)
-    print(f"Info: Total number of songs: {len(songs)}")
+    print(f"Info: Total number of songs in GameInformation: {len(songs)}")
 
     output = []
     p_bucket = 0x0 # pointer
@@ -166,7 +166,7 @@ def load_assets():
     # remove non-assets
     output = [(i[0][14:],i[1]) for i in output if i[0].startswith("Assets/Tracks/") and not i[0].startswith("Assets/Tracks/#")]
     # sort output, prioritize 1. in songs 2. alphabetic, prevent special songs being treated earlier than normal songs
-    output.sort(key=lambda x: (x[0].split("/")[0] not in songs, x[0].split("/")[0]))
+    output.sort(key=lambda x: (x[0].split("/")[0] not in songs, x[0]))
 
     for key, value in output:
         song_id, file_name = key.split("/")
