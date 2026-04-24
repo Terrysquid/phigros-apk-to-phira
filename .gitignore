@@ -4,3 +4,4 @@ output/
 *.apk
 globalgamemanagers.assets
 config.json
+song_ids.json
