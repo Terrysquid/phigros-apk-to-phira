@@ -13,6 +13,10 @@ except:
 print("Info: Modules loaded")
 
 songs = {}
+song_ids = set() # recorded song IDs, used to check for new songs
+if os.path.exists("song_ids.json"):
+    with open("song_ids.json", "r", encoding="utf-8") as f:
+        song_ids = set(json.load(f))
 output_indexes = [] # saved as list, to get corresponding index with candidates_listbox
 
 def i32(b,p): return struct.unpack_from("<i",b,p)[0], p+4 # int32
@@ -172,6 +176,9 @@ def load_assets():
 
     for key, value in output:
         song_id, file_name = key.split("/")
+        if song_id not in song_ids:
+            print(f"Info: New song ID found: {song_id}")
+            song_ids.add(song_id)
         song = get_song(song_id)
         path = "assets/aa/Android/" + value
         suffix = Path(file_name).suffix
@@ -194,7 +201,9 @@ def load_assets():
             if file_name == "Illustration.jpg": song.illustration = path
             elif file_name == "IllustrationLowRes.jpg": song.illustration_lowres = path # will not be used
             elif file_name == "IllustrationBlur.jpg": song.illustration_blur = path # will not be used
-    print("Info: Asset files located")
+    with open("song_ids.json", "w", encoding="utf-8") as f:
+        json.dump(sorted(song_ids), f, ensure_ascii=False, indent=2)
+    print(f"Info: Asset files located with {len(songs)} song ID{plural(len(songs))}")
 
 def search():
     output_id = id_var.get()
