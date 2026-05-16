@@ -31,6 +31,33 @@ def plural(n): return "s" if n != 1 else ""
 def level_group(level):
     return level if level in ["EZ", "HD", "IN", "AT"] else "Other"
 
+class GameZip:
+    def __init__(self, path):
+        self.zips = []
+        self.files = {}
+        outer = ZipFile(path)
+        self.add_zip(outer)
+        if Path(path).suffix.lower() == ".xapk":
+            for name in outer.namelist():
+                if Path(name).suffix.lower() in [".apk", ".obb"]:
+                    data = outer.read(name)
+                    self.add_zip(ZipFile(io.BytesIO(data)))
+    def add_zip(self, zf):
+        self.zips.append(zf)
+        for name in zf.namelist():
+            self.files[name] = zf
+    def open(self, path):
+        if path not in self.files:
+            raise FileNotFoundError(path)
+        return self.files[path].open(path)
+    def close(self):
+        for zf in self.zips:
+            zf.close()
+    def __enter__(self):
+        return self
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+
 class Song:
     def __init__(self):
         self.key = "" # will not be used
@@ -96,7 +123,8 @@ def add_level(song, level):
         song.charts.append("")
 
 def load_assets():
-    with ZipFile(path_var.get()) as zf:
+    apk_path = path_var.get()
+    with GameZip(apk_path) as zf:
         with zf.open("assets/aa/catalog.json") as f:
             j = json.load(f)
         with zf.open("assets/bin/Data/level0") as f:
@@ -121,7 +149,11 @@ def load_assets():
     assert game_information != None, "GameInformation not found"
     for k,v in game_information["song"].items():
         for i in v:
-            song = songs.setdefault(i["songsId"], Song())
+            song_id = i["songsId"]
+            if song_id not in song_ids:
+                print(f"Info: New song ID found (GameInformation): {song_id}")
+                song_ids.add(song_id)
+            song = songs.setdefault(song_id, Song())
             song.key = i["songsKey"]
             song.name = i["songsName"]
             song.difficulty = [round(j,1) for j in i["difficulty"]]
@@ -177,11 +209,11 @@ def load_assets():
     for key, value in output:
         song_id, file_name = key.split("/")
         if song_id not in song_ids:
-            print(f"Info: New song ID found: {song_id}")
+            print(f"Info: New song ID found (asset file): {song_id}")
             song_ids.add(song_id)
         song = get_song(song_id)
         path = "assets/aa/Android/" + value
-        suffix = Path(file_name).suffix
+        suffix = Path(file_name).suffix.lower()
         assert suffix in [".wav",".json",".jpg"], f"Unknown suffix {suffix}"
         if suffix == ".wav":
             if file_name == "music.wav":
@@ -250,14 +282,14 @@ def clear_search():
     search()
 
 def export():
-    if not path_var.get():
+    apk_path = path_var.get()
+    if not apk_path:
         set_info("导出失败: 无 APK 文件")
         return
     if not output_indexes:
         set_info("导出失败: 无候选曲目")
         return
     output_indexes_ = list(output_indexes) # copy of output_indexes, will not be modified
-    apk_path = path_var.get()
     path_button.config(state="disabled")
     clear_button.config(state="disabled")
     search_button.config(state="disabled")
@@ -277,7 +309,7 @@ def export():
 
     def worker():
         os.makedirs("output", exist_ok=True)
-        with ZipFile(apk_path) as zf:
+        with GameZip(apk_path) as zf:
             for output_count,(song_id,index) in enumerate(output_indexes_, start=1):
                 song = songs[song_id]
                 data = get_data(zf, song.music[index] or song.default_music, f"music for song {song.name} {song.levels[index]}")
@@ -307,7 +339,7 @@ def export():
 
 def select_path():
     path_button.config(state="disabled")
-    apk_path = filedialog.askopenfilename(title="选择 APK 文件", filetypes=[("APK 文件", "*.apk")])
+    apk_path = filedialog.askopenfilename(title="选择 APK/XAPK 文件", filetypes=[("APK/XAPK 文件", "*.apk *.xapk")])
     if load_path(apk_path):
         with open("config.json", "w", encoding="utf-8") as f:
             json.dump({"apk_path": apk_path}, f, ensure_ascii=False, indent=2)
