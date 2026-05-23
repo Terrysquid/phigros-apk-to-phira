@@ -1,4 +1,4 @@
-import os, json, base64, struct, UnityPy, io, yaml, re
+import os, json, base64, struct, UnityPy, io, yaml, re, hashlib
 from math import floor, ceil
 from zipfile import ZipFile, ZIP_DEFLATED
 from pathlib import Path
@@ -17,6 +17,10 @@ song_ids = [] # recorded song IDs, used to check for new songs
 if os.path.exists("song_ids.json"):
     with open("song_ids.json", "r", encoding="utf-8") as f:
         song_ids = json.load(f)
+asset_hashes = {}
+if os.path.exists("asset_hashes.json"):
+    with open("asset_hashes.json", "r", encoding="utf-8") as f:
+        asset_hashes = json.load(f)
 output_indexes = [] # saved as list, to get corresponding index with candidates_listbox
 
 def i32(b,p): return struct.unpack_from("<i",b,p)[0], p+4 # int32
@@ -122,8 +126,17 @@ def add_level(song, level):
         song.music.append(song.default_music)
         song.charts.append("")
 
+def hash_asset(zf, path):
+    h = hashlib.sha256()
+    with zf.open(path) as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
 def load_assets():
     apk_path = path_var.get()
+    report_new_song_ids = bool(song_ids)
+    report_asset_changes = bool(asset_hashes)
     with GameZip(apk_path) as zf:
         with zf.open("assets/aa/catalog.json") as f:
             j = json.load(f)
@@ -151,7 +164,8 @@ def load_assets():
             for i in v:
                 song_id = i["songsId"]
                 if song_id not in song_ids:
-                    print(f"Info: New song ID found (GameInformation): {song_id}")
+                    if report_new_song_ids:
+                        print(f"Info: New song ID found (GameInformation): {song_id}")
                     song_ids.append(song_id)
                 song = songs.setdefault(song_id, Song())
                 song.key = i["songsKey"]
@@ -209,10 +223,19 @@ def load_assets():
         for key, value in output:
             song_id, file_name = key.split("/")
             if song_id not in song_ids:
-                print(f"Info: New song ID found (asset file): {song_id}")
+                if report_new_song_ids:
+                    print(f"Info: New song ID found (asset file): {song_id}")
                 song_ids.append(song_id)
             song = get_song(song_id)
             path = "assets/aa/Android/" + value
+            old_hash = asset_hashes.get(key)
+            new_hash = hash_asset(zf, path)
+            if report_asset_changes:
+                if old_hash == None:
+                    print(f"Info: New asset found: {key}")
+                elif old_hash != new_hash:
+                    print(f"Info: Asset changed: {key}")
+            asset_hashes[key] = new_hash
             suffix = Path(file_name).suffix.lower()
             assert suffix in [".wav",".json",".jpg"], f"Unknown suffix {suffix}"
             if suffix == ".wav":
@@ -235,6 +258,8 @@ def load_assets():
                 elif file_name == "IllustrationBlur.jpg": song.illustration_blur = path # will not be used
     with open("song_ids.json", "w", encoding="utf-8") as f:
         json.dump(song_ids, f, ensure_ascii=False, indent=2)
+    with open("asset_hashes.json", "w", encoding="utf-8") as f:
+        json.dump(asset_hashes, f, ensure_ascii=False, indent=2)
     print(f"Info: Asset files located with {len(songs)} song ID{plural(len(songs))}")
 
 def search():
