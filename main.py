@@ -132,107 +132,107 @@ def load_assets():
         with zf.open("assets/bin/Data/globalgamemanagers.assets") as src:
             with open("globalgamemanagers.assets","wb") as dst:
                 dst.write(src.read()) # Important: PPtr.py in UnityPy will use this for data.m_Script.read()
-    data_key = base64.b64decode(j["m_KeyDataString"])
-    data_bucket = base64.b64decode(j["m_BucketDataString"])
-    data_entry = base64.b64decode(j["m_EntryDataString"])
-    with open("typetree.json") as f: # extracted using Il2CppDumper and TypeTreeGenerator, from libil2cpp.so and global-metadata.dat
-        typetree = json.load(f)
-    print("Info: Input files found")
+        data_key = base64.b64decode(j["m_KeyDataString"])
+        data_bucket = base64.b64decode(j["m_BucketDataString"])
+        data_entry = base64.b64decode(j["m_EntryDataString"])
+        with open("typetree.json") as f: # extracted using Il2CppDumper and TypeTreeGenerator, from libil2cpp.so and global-metadata.dat
+            typetree = json.load(f)
+        print("Info: Input files found")
 
-    game_information = None
-    for obj in env.objects:
-        if obj.type.name != "MonoBehaviour": continue
-        data = obj.read(check_read=False)
-        if data.m_Script.read().m_Name == "GameInformation":
-            game_information = obj.read_typetree(typetree["GameInformation"])
-            break
-    assert game_information != None, "GameInformation not found"
-    for k,v in game_information["song"].items():
-        for i in v:
-            song_id = i["songsId"]
+        game_information = None
+        for obj in env.objects:
+            if obj.type.name != "MonoBehaviour": continue
+            data = obj.read(check_read=False)
+            if data.m_Script.read().m_Name == "GameInformation":
+                game_information = obj.read_typetree(typetree["GameInformation"])
+                break
+        assert game_information != None, "GameInformation not found"
+        for k,v in game_information["song"].items():
+            for i in v:
+                song_id = i["songsId"]
+                if song_id not in song_ids:
+                    print(f"Info: New song ID found (GameInformation): {song_id}")
+                    song_ids.append(song_id)
+                song = songs.setdefault(song_id, Song())
+                song.key = i["songsKey"]
+                song.name = i["songsName"]
+                song.difficulty = [round(j,1) for j in i["difficulty"]]
+                song.illustrator = i["illustrator"]
+                song.charter = i["charter"]
+                song.composer = i["composer"]
+                song.levels = i["levels"]
+                song.preview_time = i["previewTime"]
+                song.preview_end_time = i["previewEndTime"]
+                assert len(song.difficulty) == len(song.charter) == len(song.levels), f"List length inconsistency with {len(song.difficulty)} {len(song.charter)} {len(song.levels)}"
+                song.music = [""] * len(song.levels)
+                song.charts = [""] * len(song.levels)
+        print(f"Info: Total number of songs in GameInformation: {len(songs)}")
+
+        output = []
+        p_bucket = 0x0 # pointer
+        count, p_bucket = u32(data_bucket, p_bucket)
+        for i in range(count):
+            p_key, p_bucket = u32(data_bucket, p_bucket)
+            typ = data_key[p_key]; p_key += 1
+            assert typ in [0,1,4], f"Unknown typ = {typ}"
+            if typ == 0: # ascii
+                key, p_key = utf8(data_key, p_key)
+            elif typ == 1: # mixed
+                key, p_key = utf16(data_key, p_key)
+            elif typ == 4: # integer
+                key, p_key = u32(data_key, p_key)
+            length, p_bucket = u32(data_bucket, p_bucket)
+            for ii in range(length): # this length seems useless, the two entries are always referring to the same entry
+                p_entry, p_bucket = u32(data_bucket, p_bucket)
+                p_entry = 4 + 28 * p_entry + 8
+                if ii == 0: entry = i32(data_entry, p_entry)[0]
+                if ii > 0: assert entry == i32(data_entry, p_entry)[0], "Different entries referred error"
+            output.append((key,entry))
+        for i, j in enumerate(output):
+            key, entry = j
+            if entry == -1: # a key
+                pass
+            if entry != -1: # a value
+                output[i] = (key, output[entry][0])
+
+        # remove keys with non-bundle values
+        output = [i for i in output if isinstance(i[1], str) and i[1].endswith(".bundle")]
+        temp = len(output)
+        # remove unity GUIDs (half of them are GUIDs)
+        output = [i for i in output if not (len(i[0]) == 32 and all(c in "0123456789abcdef" for c in i[0]))]
+        assert len(output) * 2 == temp, f"GUID removal error/inconsistency with {temp} -> {len(output)}"
+        # remove non-assets
+        output = [(i[0][14:],i[1]) for i in output if i[0].startswith("Assets/Tracks/") and not i[0].startswith("Assets/Tracks/#")]
+        # sort output, prioritize 1. in songs 2. alphabetic, prevent special songs being treated earlier than normal songs
+        output.sort(key=lambda x: (x[0].split("/")[0] not in songs, x[0]))
+
+        for key, value in output:
+            song_id, file_name = key.split("/")
             if song_id not in song_ids:
-                print(f"Info: New song ID found (GameInformation): {song_id}")
+                print(f"Info: New song ID found (asset file): {song_id}")
                 song_ids.append(song_id)
-            song = songs.setdefault(song_id, Song())
-            song.key = i["songsKey"]
-            song.name = i["songsName"]
-            song.difficulty = [round(j,1) for j in i["difficulty"]]
-            song.illustrator = i["illustrator"]
-            song.charter = i["charter"]
-            song.composer = i["composer"]
-            song.levels = i["levels"]
-            song.preview_time = i["previewTime"]
-            song.preview_end_time = i["previewEndTime"]
-            assert len(song.difficulty) == len(song.charter) == len(song.levels), f"List length inconsistency with {len(song.difficulty)} {len(song.charter)} {len(song.levels)}"
-            song.music = [""] * len(song.levels)
-            song.charts = [""] * len(song.levels)
-    print(f"Info: Total number of songs in GameInformation: {len(songs)}")
-
-    output = []
-    p_bucket = 0x0 # pointer
-    count, p_bucket = u32(data_bucket, p_bucket)
-    for i in range(count):
-        p_key, p_bucket = u32(data_bucket, p_bucket)
-        typ = data_key[p_key]; p_key += 1
-        assert typ in [0,1,4], f"Unknown typ = {typ}"
-        if typ == 0: # ascii
-            key, p_key = utf8(data_key, p_key)
-        elif typ == 1: # mixed
-            key, p_key = utf16(data_key, p_key)
-        elif typ == 4: # integer
-            key, p_key = u32(data_key, p_key)
-        length, p_bucket = u32(data_bucket, p_bucket)
-        for ii in range(length): # this length seems useless, the two entries are always referring to the same entry
-            p_entry, p_bucket = u32(data_bucket, p_bucket)
-            p_entry = 4 + 28 * p_entry + 8
-            if ii == 0: entry = i32(data_entry, p_entry)[0]
-            if ii > 0: assert entry == i32(data_entry, p_entry)[0], "Different entries referred error"
-        output.append((key,entry))
-    for i, j in enumerate(output):
-        key, entry = j
-        if entry == -1: # a key
-            pass
-        if entry != -1: # a value
-            output[i] = (key, output[entry][0])
-
-    # remove keys with non-bundle values
-    output = [i for i in output if isinstance(i[1], str) and i[1].endswith(".bundle")]
-    temp = len(output)
-    # remove unity GUIDs (half of them are GUIDs)
-    output = [i for i in output if not (len(i[0]) == 32 and all(c in "0123456789abcdef" for c in i[0]))]
-    assert len(output) * 2 == temp, f"GUID removal error/inconsistency with {temp} -> {len(output)}"
-    # remove non-assets
-    output = [(i[0][14:],i[1]) for i in output if i[0].startswith("Assets/Tracks/") and not i[0].startswith("Assets/Tracks/#")]
-    # sort output, prioritize 1. in songs 2. alphabetic, prevent special songs being treated earlier than normal songs
-    output.sort(key=lambda x: (x[0].split("/")[0] not in songs, x[0]))
-
-    for key, value in output:
-        song_id, file_name = key.split("/")
-        if song_id not in song_ids:
-            print(f"Info: New song ID found (asset file): {song_id}")
-            song_ids.append(song_id)
-        song = get_song(song_id)
-        path = "assets/aa/Android/" + value
-        suffix = Path(file_name).suffix.lower()
-        assert suffix in [".wav",".json",".jpg"], f"Unknown suffix {suffix}"
-        if suffix == ".wav":
-            if file_name == "music.wav":
-                song.default_music = path
-            else:
-                assert file_name[:6] == "music_", f"Unknown music file {file_name}"
-                level = file_name[6:-4] # music_IN.wav -> IN (for Cristalisia)
+            song = get_song(song_id)
+            path = "assets/aa/Android/" + value
+            suffix = Path(file_name).suffix.lower()
+            assert suffix in [".wav",".json",".jpg"], f"Unknown suffix {suffix}"
+            if suffix == ".wav":
+                if file_name == "music.wav":
+                    song.default_music = path
+                else:
+                    assert file_name[:6] == "music_", f"Unknown music file {file_name}"
+                    level = file_name[6:-4] # music_IN.wav -> IN (for Cristalisia)
+                    add_level(song, level)
+                    song.music[song.levels.index(level)] = path
+            elif suffix == ".json":
+                assert file_name[:6] == "Chart_", f"Unknown chart file {file_name}"
+                level = file_name[6:-5] # Chart_IN.json -> IN
                 add_level(song, level)
-                song.music[song.levels.index(level)] = path
-        elif suffix == ".json":
-            assert file_name[:6] == "Chart_", f"Unknown chart file {file_name}"
-            level = file_name[6:-5] # Chart_IN.json -> IN
-            add_level(song, level)
-            song.charts[song.levels.index(level)] = path
-        elif suffix == ".jpg":
-            assert file_name in ["Illustration.jpg","IllustrationLowRes.jpg","IllustrationBlur.jpg"], f"Unknown illustration file {file_name}"
-            if file_name == "Illustration.jpg": song.illustration = path
-            elif file_name == "IllustrationLowRes.jpg": song.illustration_lowres = path # will not be used
-            elif file_name == "IllustrationBlur.jpg": song.illustration_blur = path # will not be used
+                song.charts[song.levels.index(level)] = path
+            elif suffix == ".jpg":
+                assert file_name in ["Illustration.jpg","IllustrationLowRes.jpg","IllustrationBlur.jpg"], f"Unknown illustration file {file_name}"
+                if file_name == "Illustration.jpg": song.illustration = path
+                elif file_name == "IllustrationLowRes.jpg": song.illustration_lowres = path # will not be used
+                elif file_name == "IllustrationBlur.jpg": song.illustration_blur = path # will not be used
     with open("song_ids.json", "w", encoding="utf-8") as f:
         json.dump(song_ids, f, ensure_ascii=False, indent=2)
     print(f"Info: Asset files located with {len(songs)} song ID{plural(len(songs))}")
