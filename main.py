@@ -126,12 +126,25 @@ def add_level(song, level):
         song.music.append(song.default_music)
         song.charts.append("")
 
-def hash_asset(zf, path):
-    h = hashlib.sha256()
+def get_data(zf, path, description):
+    assert path != "", f"Missing {description}"
     with zf.open(path) as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b""):
-            h.update(chunk)
-    return h.hexdigest()
+        objs = [obj for obj in UnityPy.load(f.read()).objects if obj.type.name not in ["AssetBundle","Sprite"]]
+        assert len(objs) == 1, f"Expected 1 object in {path}, got {len(objs)}"
+        data = objs[0].read()
+    return data
+
+def get_content(data, suffix):
+    assert suffix in [".wav",".json",".jpg"], f"Unknown suffix {suffix}"
+    if suffix == ".wav":
+        assert len(data.samples) == 1, f"Expected 1 sample, got {len(data.samples)}"
+        return next(iter(data.samples.values()))
+    if suffix == ".json":
+        return data.m_Script.encode()
+    if suffix == ".jpg":
+        buf = io.BytesIO()
+        data.image.save(buf, "JPEG")
+        return buf.getvalue()
 
 def load_assets():
     apk_path = path_var.get()
@@ -228,16 +241,18 @@ def load_assets():
                 song_ids.append(song_id)
             song = get_song(song_id)
             path = "assets/aa/Android/" + value
+            suffix = Path(file_name).suffix.lower()
+            assert suffix in [".wav",".json",".jpg"], f"Unknown suffix {suffix}"
+
+            data = get_data(zf, path, key)
             old_hash = asset_hashes.get(key)
-            new_hash = hash_asset(zf, path)
+            new_hash = hashlib.sha256(get_content(data, suffix)).hexdigest()
             if report_asset_changes:
                 if old_hash == None:
                     print(f"Info: New asset found: {key}")
                 elif old_hash != new_hash:
                     print(f"Info: Asset changed: {key}")
             asset_hashes[key] = new_hash
-            suffix = Path(file_name).suffix.lower()
-            assert suffix in [".wav",".json",".jpg"], f"Unknown suffix {suffix}"
             if suffix == ".wav":
                 if file_name == "music.wav":
                     song.default_music = path
@@ -324,28 +339,17 @@ def export():
     set_info(f"正在导出: 0/{len(output_indexes_)}")
     print("Info: Starting to export")
 
-    def get_data(zf, path, description):
-        assert path != "", f"Missing {description}"
-        with zf.open(path) as f:
-            objs = [obj for obj in UnityPy.load(f.read()).objects if obj.type.name not in ["AssetBundle","Sprite"]]
-            assert len(objs) == 1, f"Expected 1 object in {path}, got {len(objs)}"
-            data = objs[0].read()
-        return data
-
     def worker():
         os.makedirs("output", exist_ok=True)
         with GameZip(apk_path) as zf:
             for output_count,(song_id,index) in enumerate(output_indexes_, start=1):
                 song = songs[song_id]
                 data = get_data(zf, song.music[index] or song.default_music, f"music for song {song.name} {song.levels[index]}")
-                assert len(data.samples) == 1, f"Expected 1 sample in {song.music[index] or song.default_music}, got {len(data.samples)}"
-                (output_music,) = data.samples.values()
+                output_music = get_content(data, ".wav")
                 data = get_data(zf, song.charts[index], f"chart for song {song.name} {song.levels[index]}")
-                output_chart = data.m_Script.encode()
+                output_chart = get_content(data, ".json")
                 data = get_data(zf, song.illustration, f"illustration for song {song.name}")
-                buf = io.BytesIO()
-                data.image.save(buf, "JPEG")
-                output_illustration = buf.getvalue()
+                output_illustration = get_content(data, ".jpg")
                 with ZipFile(f"output/[{song.levels[index]} {song.difficulty[index]:.1f}] {sanitize_windows(song.name)} ({song_id}).zip", "w", compression=ZIP_DEFLATED) as output_zf:
                     output_zf.writestr("music.wav", output_music)
                     output_zf.writestr("chart.json", output_chart)
