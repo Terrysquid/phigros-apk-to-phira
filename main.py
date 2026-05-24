@@ -146,10 +146,8 @@ def get_content(data, suffix):
         data.image.save(buf, "JPEG")
         return buf.getvalue()
 
-def load_assets():
+def load_assets(check_changes=False):
     apk_path = path_var.get()
-    report_new_song_ids = bool(song_ids)
-    report_asset_changes = bool(asset_hashes)
     with GameZip(apk_path) as zf:
         with zf.open("assets/aa/catalog.json") as f:
             j = json.load(f)
@@ -176,9 +174,8 @@ def load_assets():
         for k,v in game_information["song"].items():
             for i in v:
                 song_id = i["songsId"]
-                if song_id not in song_ids:
-                    if report_new_song_ids:
-                        print(f"Info: New song ID found (GameInformation): {song_id}")
+                if check_changes and song_id not in song_ids:
+                    print(f"Info: New song ID found (GameInformation): {song_id}")
                     song_ids.append(song_id)
                 song = songs.setdefault(song_id, Song())
                 song.key = i["songsKey"]
@@ -235,24 +232,23 @@ def load_assets():
 
         for key, value in output:
             song_id, file_name = key.split("/")
-            if song_id not in song_ids:
-                if report_new_song_ids:
-                    print(f"Info: New song ID found (asset file): {song_id}")
+            if check_changes and song_id not in song_ids:
+                print(f"Info: New song ID found (asset file): {song_id}")
                 song_ids.append(song_id)
             song = get_song(song_id)
             path = "assets/aa/Android/" + value
             suffix = Path(file_name).suffix.lower()
             assert suffix in [".wav",".json",".jpg"], f"Unknown suffix {suffix}"
 
-            data = get_data(zf, path, key)
-            old_hash = asset_hashes.get(key)
-            new_hash = hashlib.sha256(get_content(data, suffix)).hexdigest()
-            if report_asset_changes:
+            if check_changes:
+                data = get_data(zf, path, key)
+                old_hash = asset_hashes.get(key)
+                new_hash = hashlib.sha256(get_content(data, suffix)).hexdigest()
                 if old_hash == None:
                     print(f"Info: New asset found: {key}")
                 elif old_hash != new_hash:
                     print(f"Info: Asset changed: {key}")
-            asset_hashes[key] = new_hash
+                asset_hashes[key] = new_hash
             if suffix == ".wav":
                 if file_name == "music.wav":
                     song.default_music = path
@@ -271,10 +267,11 @@ def load_assets():
                 if file_name == "Illustration.jpg": song.illustration = path
                 elif file_name == "IllustrationLowRes.jpg": song.illustration_lowres = path # will not be used
                 elif file_name == "IllustrationBlur.jpg": song.illustration_blur = path # will not be used
-    with open("song_ids.json", "w", encoding="utf-8") as f:
-        json.dump(song_ids, f, ensure_ascii=False, indent=2)
-    with open("asset_hashes.json", "w", encoding="utf-8") as f:
-        json.dump(asset_hashes, f, ensure_ascii=False, indent=2)
+    if check_changes:
+        with open("song_ids.json", "w", encoding="utf-8") as f:
+            json.dump(song_ids, f, ensure_ascii=False, indent=2)
+        with open("asset_hashes.json", "w", encoding="utf-8") as f:
+            json.dump(asset_hashes, f, ensure_ascii=False, indent=2)
     print(f"Info: Asset files located with {len(songs)} song ID{plural(len(songs))}")
 
 def search():
@@ -324,9 +321,15 @@ def clear_search():
 def export():
     apk_path = path_var.get()
     if not apk_path:
-        set_info("导出失败: 无 APK 文件")
+        print(f"Error exporting: empty path")
+        set_info("导出失败: 路径为空")
+        return
+    if not os.path.exists(apk_path):
+        print(f"Error exporting: APK/XAPK file not found: {apk_path}")
+        set_info("导出失败: APK/XAPK 文件不存在")
         return
     if not output_indexes:
+        print(f"Error exporting: no candidates selected")
         set_info("导出失败: 无候选曲目")
         return
     output_indexes_ = list(output_indexes) # copy of output_indexes, will not be modified
@@ -367,36 +370,36 @@ def export():
     Thread(target=worker, daemon=True).start()
 
 def select_path():
-    path_button.config(state="disabled")
     apk_path = filedialog.askopenfilename(title="选择 APK/XAPK 文件", filetypes=[("APK/XAPK 文件", "*.apk *.xapk")])
-    if load_path(apk_path):
-        with open("config.json", "w", encoding="utf-8") as f:
-            json.dump({"apk_path": apk_path}, f, ensure_ascii=False, indent=2)
-    path_button.config(state="normal")
+    if not apk_path: return
+    path_var.set(apk_path)
+    with open("config.json", "w", encoding="utf-8") as f:
+        json.dump({"apk_path": apk_path}, f, ensure_ascii=False, indent=2)
 
 def set_path():
     if not os.path.exists("config.json"): return
     with open("config.json", "r", encoding="utf-8") as f:
         config = json.load(f)
     apk_path = config.get("apk_path", "")
-    load_path(apk_path)
-
-def load_path(apk_path):
-    if not apk_path: return False
-    if not os.path.exists(apk_path):
-        print(f"Error: APK file not found: {apk_path}")
-        set_info("APK 文件不存在")
-        return False
     path_var.set(apk_path)
+
+def load_path(check_changes=False):
+    apk_path = path_var.get()
+    if not apk_path:
+        print(f"Error loading: empty path")
+        set_info("加载失败: 路径为空")
+        return
+    if not os.path.exists(apk_path):
+        print(f"Error loading: APK/XAPK file not found: {apk_path}")
+        set_info("加载失败: APK/XAPK 文件不存在")
+        return
     songs.clear()
     try:
-        load_assets()
+        load_assets(check_changes)
     except Exception as e:
         print(f"Error: Failed to load assets: {e}")
         set_info(f"加载资源失败")
-        return False
     clear_search() # to load level_frame
-    return True
 
 def select_candidate(event):
     selection = event.widget.curselection()
@@ -443,7 +446,7 @@ path_var = tk.StringVar()
 path_entry = ttk.Entry(path_frame, width=40, textvariable=path_var, state="readonly")
 path_entry.grid(row=0, column=0, sticky="ew")
 #
-path_button = ttk.Button(path_frame, text="选择 APK", width=8, command=select_path)
+path_button = ttk.Button(path_frame, text="选择文件", width=8, command=select_path)
 path_button.grid(row=0, column=1, sticky="w")
 
 search_frame = ttk.LabelFrame(root, text="搜索曲目")
@@ -505,8 +508,12 @@ bottom_frame.columnconfigure(1, weight=1)
 info_var = tk.StringVar()
 info_label = ttk.Label(bottom_frame, textvariable=info_var)
 info_label.grid(row=0, column=0, sticky="w")
+load_button = ttk.Button(bottom_frame, text="加载", width=8, command=lambda: load_path(False))
+load_button.grid(row=0, column=1, sticky="e")
+check_load_button = ttk.Button(bottom_frame, text="加载并检查", width=8, command=lambda: load_path(True))
+check_load_button.grid(row=0, column=2, sticky="e")
 export_button = ttk.Button(bottom_frame, text="导出", width=8, command=export)
-export_button.grid(row=0, column=1, sticky="e")
+export_button.grid(row=0, column=3, sticky="e")
 
 set_path()
 root.mainloop()
