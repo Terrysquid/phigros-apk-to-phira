@@ -401,6 +401,8 @@ def load_path(check_changes=False):
     try:
         load_assets(check_changes)
     except Exception as e:
+        output_indexes.clear()
+        candidates_listbox.delete(0, tk.END)
         print(f"Error: Failed to load assets: {e}")
         set_info(f"加载资源失败")
         return
