@@ -146,8 +146,7 @@ def get_content(data, suffix):
         data.image.save(buf, "JPEG")
         return buf.getvalue()
 
-def load_assets(check_changes=False):
-    apk_path = path_var.get()
+def load_assets(apk_path, check_changes=False):
     with GameZip(apk_path) as zf:
         with zf.open("assets/aa/catalog.json") as f:
             j = json.load(f)
@@ -190,7 +189,7 @@ def load_assets(check_changes=False):
                 assert len(song.difficulty) == len(song.charter) == len(song.levels), f"List length inconsistency with {len(song.difficulty)} {len(song.charter)} {len(song.levels)}"
                 song.music = [""] * len(song.levels)
                 song.charts = [""] * len(song.levels)
-        print(f"Info: Total number of songs in GameInformation: {len(songs)}")
+        print(f"Info: {len(songs)} songs found in GameInformation")
 
         output = []
         p_bucket = 0x0 # pointer
@@ -229,8 +228,11 @@ def load_assets(check_changes=False):
         output = [(i[0][14:],i[1]) for i in output if i[0].startswith("Assets/Tracks/") and not i[0].startswith("Assets/Tracks/#")]
         # sort output, prioritize 1. in songs 2. alphabetic, prevent special songs being treated earlier than normal songs
         output.sort(key=lambda x: (x[0].split("/")[0] not in songs, x[0]))
+        print(f"Info: {len(output)} assets found")
 
-        for key, value in output:
+        root.after(0, lambda: progress_bar.config(maximum=len(output), value=0))
+        root.after(0, lambda: set_info(f"{'正在检查并加载' if check_changes else '正在加载'}: 0/{len(output)}"))
+        for count, (key, value) in enumerate(output, start=1):
             song_id, file_name = key.split("/")
             if check_changes and song_id not in song_ids:
                 print(f"Info: New song ID found (asset file): {song_id}")
@@ -267,12 +269,13 @@ def load_assets(check_changes=False):
                 if file_name == "Illustration.jpg": song.illustration = path
                 elif file_name == "IllustrationLowRes.jpg": song.illustration_lowres = path # will not be used
                 elif file_name == "IllustrationBlur.jpg": song.illustration_blur = path # will not be used
+            root.after(0, lambda cnt=count: progress_bar.config(value=cnt))
+            root.after(0, lambda cnt=count: set_info(f"{'正在检查并加载' if check_changes else '正在加载'}: {cnt}/{len(output)}"))
     if check_changes:
         with open("song_ids.json", "w", encoding="utf-8") as f:
             json.dump(song_ids, f, ensure_ascii=False, indent=2)
         with open("asset_hashes.json", "w", encoding="utf-8") as f:
             json.dump(asset_hashes, f, ensure_ascii=False, indent=2)
-    print(f"Info: Asset files located with {len(songs)} song ID{plural(len(songs))}")
 
 def search():
     output_id = id_var.get()
@@ -333,21 +336,15 @@ def export():
         set_info("导出失败: 无候选曲目")
         return
     output_indexes_ = list(output_indexes) # copy of output_indexes, will not be modified
-    path_button.config(state="disabled")
-    load_button.config(state="disabled")
-    check_load_button.config(state="disabled")
-    clear_button.config(state="disabled")
-    search_button.config(state="disabled")
-    candidates_listbox.config(state="disabled")
-    export_button.config(state="disabled")
-    progress_bar.config(maximum=len(output_indexes_), value=0)
-    set_info(f"正在导出: 0/{len(output_indexes_)}")
-    print("Info: Starting to export")
+    set_buttons_state("disabled")
 
     def worker():
         os.makedirs("output", exist_ok=True)
+        print("Info: Starting to export")
+        root.after(0, lambda: progress_bar.config(maximum=len(output_indexes_), value=0))
+        root.after(0, lambda: set_info(f"正在导出: 0/{len(output_indexes_)}"))
         with GameZip(apk_path) as zf:
-            for output_count,(song_id,index) in enumerate(output_indexes_, start=1):
+            for count, (song_id, index) in enumerate(output_indexes_, start=1):
                 song = songs[song_id]
                 data = get_data(zf, song.music[index] or song.default_music, f"music for song {song.name} {song.levels[index]}")
                 output_music = get_content(data, ".wav")
@@ -360,17 +357,11 @@ def export():
                     output_zf.writestr("chart.json", output_chart)
                     output_zf.writestr("illustration.jpg", output_illustration)
                     output_zf.writestr("info.yml", generate_yaml(song, index))
-                root.after(0, lambda cnt=output_count: progress_bar.config(value=cnt))
-                root.after(0, lambda cnt=output_count: set_info(f"正在导出: {cnt}/{len(output_indexes_)}"))
+                root.after(0, lambda cnt=count: progress_bar.config(value=cnt))
+                root.after(0, lambda cnt=count: set_info(f"正在导出: {cnt}/{len(output_indexes_)}"))
         print(f"Info: {len(output_indexes_)} zip file{plural(len(output_indexes_))} written to output/ directory")
         root.after(0, lambda: set_info(f"已导出 {len(output_indexes_)} 张谱面至 output/ 文件夹"))
-        root.after(0, lambda: path_button.config(state="normal"))
-        root.after(0, lambda: load_button.config(state="normal"))
-        root.after(0, lambda: check_load_button.config(state="normal"))
-        root.after(0, lambda: clear_button.config(state="normal"))
-        root.after(0, lambda: search_button.config(state="normal"))
-        root.after(0, lambda: candidates_listbox.config(state="normal"))
-        root.after(0, lambda: export_button.config(state="normal"))
+        root.after(0, lambda: set_buttons_state("normal"))
     Thread(target=worker, daemon=True).start()
 
 def select_path():
@@ -387,7 +378,7 @@ def set_path():
     apk_path = config.get("apk_path", "")
     path_var.set(apk_path)
 
-def load_path(check_changes=False):
+def load(check_changes=False):
     apk_path = path_var.get()
     if not apk_path:
         print(f"Error loading: empty path")
@@ -398,15 +389,24 @@ def load_path(check_changes=False):
         set_info("加载失败: APK/XAPK 文件不存在")
         return
     songs.clear()
-    try:
-        load_assets(check_changes)
-    except Exception as e:
-        output_indexes.clear()
-        candidates_listbox.delete(0, tk.END)
-        print(f"Error: Failed to load assets: {e}")
-        set_info(f"加载资源失败")
-        return
-    clear_search() # to load level_frame
+    output_indexes.clear()
+    candidates_listbox.delete(0, tk.END)
+    set_buttons_state("disabled")
+
+    def worker():
+        print("Info: Starting to check and load" if check_changes else "Info: Starting to load")
+        root.after(0, lambda: set_info(f"{'正在检查并加载' if check_changes else '正在加载'}"))
+        try:
+            load_assets(apk_path, check_changes)
+        except Exception as e:
+            print(f"Error: Failed to load assets: {e}")
+            root.after(0, lambda: songs.clear())
+            root.after(0, lambda: set_info(f"加载资源失败"))
+            root.after(0, lambda: set_buttons_state("normal"))
+            return
+        root.after(0, lambda: set_buttons_state("normal"))
+        root.after(0, lambda: clear_search()) # to load level_frame
+    Thread(target=worker, daemon=True).start()
 
 def select_candidate(event):
     selection = event.widget.curselection()
@@ -426,6 +426,15 @@ def double_click_candidate(event):
 
 def set_info(info):
     info_var.set(info)
+
+def set_buttons_state(state):
+    path_button.config(state=state)
+    load_button.config(state=state)
+    check_load_button.config(state=state)
+    clear_button.config(state=state)
+    search_button.config(state=state)
+    candidates_listbox.config(state=state)
+    export_button.config(state=state)
 
 def toggle_special():
     if special_var.get():
@@ -463,9 +472,9 @@ load_buttons_frame.columnconfigure(1, weight=1)
 #
 path_button = ttk.Button(load_buttons_frame, text="选择文件", width=8, command=select_path)
 path_button.grid(row=0, column=0, sticky="w")
-load_button = ttk.Button(load_buttons_frame, text="加载", width=8, command=lambda: load_path(False))
+load_button = ttk.Button(load_buttons_frame, text="加载", width=8, command=lambda: load(False))
 load_button.grid(row=0, column=2, sticky="e")
-check_load_button = ttk.Button(load_buttons_frame, text="检查并加载", width=10, command=lambda: load_path(True))
+check_load_button = ttk.Button(load_buttons_frame, text="检查并加载", width=10, command=lambda: load(True))
 check_load_button.grid(row=0, column=3, sticky="e")
 
 search_frame = ttk.LabelFrame(root, text="搜索曲目")
