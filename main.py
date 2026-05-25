@@ -435,6 +435,10 @@ def set_buttons_state(state):
     search_button.config(state=state)
     candidates_listbox.config(state=state)
     export_button.config(state=state)
+    id_entry.config(state=state)
+    special_check.config(state=state)
+    for child in level_frame.winfo_children():
+        child.config(state=state)
 
 def toggle_special():
     if special_var.get():
