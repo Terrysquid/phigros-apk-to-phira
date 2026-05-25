@@ -334,6 +334,8 @@ def export():
         return
     output_indexes_ = list(output_indexes) # copy of output_indexes, will not be modified
     path_button.config(state="disabled")
+    load_button.config(state="disabled")
+    check_load_button.config(state="disabled")
     clear_button.config(state="disabled")
     search_button.config(state="disabled")
     candidates_listbox.config(state="disabled")
@@ -363,6 +365,8 @@ def export():
         print(f"Info: {len(output_indexes_)} zip file{plural(len(output_indexes_))} written to output/ directory")
         root.after(0, lambda: set_info(f"已导出 {len(output_indexes_)} 张谱面至 output/ 文件夹"))
         root.after(0, lambda: path_button.config(state="normal"))
+        root.after(0, lambda: load_button.config(state="normal"))
+        root.after(0, lambda: check_load_button.config(state="normal"))
         root.after(0, lambda: clear_button.config(state="normal"))
         root.after(0, lambda: search_button.config(state="normal"))
         root.after(0, lambda: candidates_listbox.config(state="normal"))
@@ -399,6 +403,7 @@ def load_path(check_changes=False):
     except Exception as e:
         print(f"Error: Failed to load assets: {e}")
         set_info(f"加载资源失败")
+        return
     clear_search() # to load level_frame
 
 def select_candidate(event):
@@ -438,8 +443,12 @@ root.title("Phigros 谱面提取")
 root.columnconfigure(0, weight=1)
 root.rowconfigure(2, weight=1)
 
-path_frame = ttk.LabelFrame(root, text="选择文件")
-path_frame.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
+load_frame = ttk.LabelFrame(root, text="加载文件")
+load_frame.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
+load_frame.columnconfigure(0, weight=1)
+#
+path_frame = ttk.Frame(load_frame)
+path_frame.grid(row=0, column=0, sticky="ew")
 path_frame.columnconfigure(0, weight=1)
 #
 path_var = tk.StringVar()
@@ -448,6 +457,14 @@ path_entry.grid(row=0, column=0, sticky="ew")
 #
 path_button = ttk.Button(path_frame, text="选择文件", width=8, command=select_path)
 path_button.grid(row=0, column=1, sticky="w")
+#
+load_buttons_frame = ttk.Frame(load_frame)
+load_buttons_frame.grid(row=1, column=0, sticky="e")
+#
+load_button = ttk.Button(load_buttons_frame, text="加载", width=8, command=lambda: load_path(False))
+load_button.grid(row=0, column=0, sticky="e")
+check_load_button = ttk.Button(load_buttons_frame, text="检查并加载", width=10, command=lambda: load_path(True))
+check_load_button.grid(row=0, column=1, sticky="e")
 
 search_frame = ttk.LabelFrame(root, text="搜索曲目")
 search_frame.grid(row=1, column=0, padx=10, pady=(0,10), sticky="ew")
@@ -508,12 +525,8 @@ bottom_frame.columnconfigure(1, weight=1)
 info_var = tk.StringVar()
 info_label = ttk.Label(bottom_frame, textvariable=info_var)
 info_label.grid(row=0, column=0, sticky="w")
-load_button = ttk.Button(bottom_frame, text="加载", width=8, command=lambda: load_path(False))
-load_button.grid(row=0, column=1, sticky="e")
-check_load_button = ttk.Button(bottom_frame, text="加载并检查", width=8, command=lambda: load_path(True))
-check_load_button.grid(row=0, column=2, sticky="e")
 export_button = ttk.Button(bottom_frame, text="导出", width=8, command=export)
-export_button.grid(row=0, column=3, sticky="e")
+export_button.grid(row=0, column=1, sticky="e")
 
 set_path()
 root.mainloop()
