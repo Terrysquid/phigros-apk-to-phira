@@ -455,16 +455,16 @@ path_var = tk.StringVar()
 path_entry = ttk.Entry(path_frame, width=40, textvariable=path_var, state="readonly")
 path_entry.grid(row=0, column=0, sticky="ew")
 #
-path_button = ttk.Button(path_frame, text="选择文件", width=8, command=select_path)
-path_button.grid(row=0, column=1, sticky="w")
-#
 load_buttons_frame = ttk.Frame(load_frame)
-load_buttons_frame.grid(row=1, column=0, sticky="e")
+load_buttons_frame.grid(row=1, column=0, sticky="ew")
+load_buttons_frame.columnconfigure(1, weight=1)
 #
+path_button = ttk.Button(load_buttons_frame, text="选择文件", width=8, command=select_path)
+path_button.grid(row=0, column=0, sticky="w")
 load_button = ttk.Button(load_buttons_frame, text="加载", width=8, command=lambda: load_path(False))
-load_button.grid(row=0, column=0, sticky="e")
+load_button.grid(row=0, column=2, sticky="e")
 check_load_button = ttk.Button(load_buttons_frame, text="检查并加载", width=10, command=lambda: load_path(True))
-check_load_button.grid(row=0, column=1, sticky="e")
+check_load_button.grid(row=0, column=3, sticky="e")
 
 search_frame = ttk.LabelFrame(root, text="搜索曲目")
 search_frame.grid(row=1, column=0, padx=10, pady=(0,10), sticky="ew")
