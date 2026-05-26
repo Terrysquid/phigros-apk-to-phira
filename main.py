@@ -80,6 +80,28 @@ class Song:
         self.charts = []
         self.charter = []
 
+class ToolTip:
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.window = None
+        widget.bind("<Enter>", self.show)
+        widget.bind("<Leave>", self.hide)
+    def show(self, event=None):
+        if self.window:
+            return
+        x = self.widget.winfo_rootx()
+        y = self.widget.winfo_rooty() + self.widget.winfo_height()
+        self.window = tk.Toplevel(self.widget)
+        self.window.wm_overrideredirect(True)
+        self.window.wm_geometry(f"+{x}+{y}")
+        label = ttk.Label(self.window, text=self.text, relief="solid")
+        label.grid()
+    def hide(self, event=None):
+        if self.window:
+            self.window.destroy()
+            self.window = None
+
 def generate_yaml(song, index):
     data = {
         "name": song.name,
@@ -478,8 +500,10 @@ path_button = ttk.Button(load_buttons_frame, text="选择文件", width=8, comma
 path_button.grid(row=0, column=0, sticky="w")
 load_button = ttk.Button(load_buttons_frame, text="加载", width=8, command=lambda: load(False))
 load_button.grid(row=0, column=2, sticky="e")
+ToolTip(load_button, "快速加载曲目列表")
 check_load_button = ttk.Button(load_buttons_frame, text="检查并加载", width=10, command=lambda: load(True))
 check_load_button.grid(row=0, column=3, sticky="e")
+ToolTip(check_load_button, "检查资源变化并加载曲目列表")
 
 search_frame = ttk.LabelFrame(root, text="搜索曲目")
 search_frame.grid(row=1, column=0, padx=10, pady=(0,10), sticky="ew")
@@ -496,7 +520,10 @@ level_frame.grid(row=1, column=1, columnspan=3, sticky="w")
 level_vars = {}
 for level in ["EZ", "HD", "IN", "AT", "Other"]:
     level_vars[level] = tk.BooleanVar(value=False)
-    ttk.Checkbutton(level_frame, text=level, variable=level_vars[level], command=search).grid(row=0, column=len(level_vars)-1, sticky="w")
+    level_button = ttk.Checkbutton(level_frame, text=level, variable=level_vars[level], command=search)
+    level_button.grid(row=0, column=len(level_vars)-1, sticky="w")
+    if level == "Other":
+        ToolTip(level_button, "Legacy等特殊难度")
 #
 ttk.Label(search_frame, text="筛选定数: ").grid(row=2, column=0, sticky="w")
 difficulty_frame = ttk.Frame(search_frame)
@@ -511,6 +538,7 @@ difficulty_max_entry.grid(row=0, column=2, sticky="w")
 special_var = tk.BooleanVar(value=False)
 special_check = ttk.Checkbutton(difficulty_frame, text="SP", variable=special_var, command=toggle_special)
 special_check.grid(row=0, column=3, sticky="w")
+ToolTip(special_check, "定数为0的特殊谱面")
 #
 clear_button = ttk.Button(search_frame, text="清空", width=8, command=clear_search)
 clear_button.grid(row=2, column=2, sticky="e")
