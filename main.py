@@ -361,29 +361,36 @@ def export():
     set_buttons_state("disabled")
 
     def worker():
-        os.makedirs("output", exist_ok=True)
         print("Info: Starting to export")
-        root.after(0, lambda: progress_bar.config(maximum=len(output_indexes_), value=0))
-        root.after(0, lambda: set_info(f"正在导出: 0/{len(output_indexes_)}"))
-        with GameZip(apk_path) as zf:
-            for count, (song_id, index) in enumerate(output_indexes_, start=1):
-                song = songs[song_id]
-                data = get_data(zf, song.music[index] or song.default_music, f"music for song {song.name} {song.levels[index]}")
-                output_music = get_content(data, ".wav")
-                data = get_data(zf, song.charts[index], f"chart for song {song.name} {song.levels[index]}")
-                output_chart = get_content(data, ".json")
-                data = get_data(zf, song.illustration, f"illustration for song {song.name}")
-                output_illustration = get_content(data, ".jpg")
-                with ZipFile(f"output/[{song.levels[index]} {song.difficulty[index]:.1f}] {sanitize_windows(song.name)} ({song_id}).zip", "w", compression=ZIP_DEFLATED) as output_zf:
-                    output_zf.writestr("music.wav", output_music)
-                    output_zf.writestr("chart.json", output_chart)
-                    output_zf.writestr("illustration.jpg", output_illustration)
-                    output_zf.writestr("info.yml", generate_yaml(song, index))
-                root.after(0, lambda cnt=count: progress_bar.config(value=cnt))
-                root.after(0, lambda cnt=count: set_info(f"正在导出: {cnt}/{len(output_indexes_)}"))
-        print(f"Info: {len(output_indexes_)} zip file{plural(len(output_indexes_))} written to output/ directory")
-        root.after(0, lambda: set_info(f"已导出 {len(output_indexes_)} 张谱面至 output/ 文件夹"))
-        root.after(0, lambda: set_buttons_state("normal"))
+        root.after(0, lambda: set_info("正在导出"))
+        try:
+            os.makedirs("output", exist_ok=True)
+            root.after(0, lambda: progress_bar.config(maximum=len(output_indexes_), value=0))
+            root.after(0, lambda: set_info(f"正在导出: 0/{len(output_indexes_)}"))
+            with GameZip(apk_path) as zf:
+                for count, (song_id, index) in enumerate(output_indexes_, start=1):
+                    song = songs[song_id]
+                    data = get_data(zf, song.music[index] or song.default_music, f"music for song {song.name} {song.levels[index]}")
+                    output_music = get_content(data, ".wav")
+                    data = get_data(zf, song.charts[index], f"chart for song {song.name} {song.levels[index]}")
+                    output_chart = get_content(data, ".json")
+                    data = get_data(zf, song.illustration, f"illustration for song {song.name}")
+                    output_illustration = get_content(data, ".jpg")
+                    with ZipFile(f"output/[{song.levels[index]} {song.difficulty[index]:.1f}] {sanitize_windows(song.name)} ({song_id}).zip", "w", compression=ZIP_DEFLATED) as output_zf:
+                        output_zf.writestr("music.wav", output_music)
+                        output_zf.writestr("chart.json", output_chart)
+                        output_zf.writestr("illustration.jpg", output_illustration)
+                        output_zf.writestr("info.yml", generate_yaml(song, index))
+                    root.after(0, lambda cnt=count: progress_bar.config(value=cnt))
+                    root.after(0, lambda cnt=count: set_info(f"正在导出: {cnt}/{len(output_indexes_)}"))
+        except Exception as e:
+            print(f"Error: Failed to export: {e}")
+            root.after(0, lambda: set_info("导出失败"))
+            root.after(0, lambda: set_buttons_state("normal"))
+        else:
+            print(f"Info: {len(output_indexes_)} zip file{plural(len(output_indexes_))} written to output/ directory")
+            root.after(0, lambda: set_info(f"已导出 {len(output_indexes_)} 张谱面至 output/ 文件夹"))
+            root.after(0, lambda: set_buttons_state("normal"))
     Thread(target=worker, daemon=True).start()
 
 def select_path():
@@ -425,9 +432,9 @@ def load(check_changes=False):
             root.after(0, lambda: songs.clear())
             root.after(0, lambda: set_info(f"加载资源失败"))
             root.after(0, lambda: set_buttons_state("normal"))
-            return
-        root.after(0, lambda: set_buttons_state("normal"))
-        root.after(0, lambda: clear_search()) # to load level_frame
+        else:
+            root.after(0, lambda: set_buttons_state("normal"))
+            root.after(0, lambda: clear_search()) # to load level_frame
     Thread(target=worker, daemon=True).start()
 
 def select_candidate(event):
