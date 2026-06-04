@@ -106,7 +106,7 @@ def generate_yaml(song, index):
     data = {
         "name": song.name,
         "difficulty": song.difficulty[index],
-        "level": song.levels[index] + (" Lv.?" if song.difficulty[index] == 0 else f" Lv.{floor(song.difficulty[index])}"),
+        "level": song.levels[index] + "  " + ("Lv.?" if song.difficulty[index] == 0 else f"Lv.{floor(song.difficulty[index])}"),
         "charter": song.charter[index],
         "composer": song.composer,
         "illustrator": song.illustrator,
