@@ -72,8 +72,8 @@ class Song:
         self.preview_time = 0.0
         self.preview_end_time = 0.0
         self.illustration = ""
-        self.illustration_lowres = "" # will not be used
-        self.illustration_blur = "" # will not be used
+        self.illustration_lowres = ""
+        self.illustration_blur = ""
         self.illustrator = ""
         self.levels = []
         self.difficulty = []
@@ -114,6 +114,8 @@ def generate_yaml(song, index):
         "format": "pgr",
         "music": "music.wav",
         "illustration": "illustration.jpg",
+        "illustrationLowRes": "illustrationLowRes.jpg",
+        "illustrationBlur": "illustrationBlur.jpg",
         "previewStart": song.preview_time,
         "previewEnd": song.preview_end_time
     }
@@ -289,8 +291,8 @@ def load_assets(apk_path, check_changes=False):
             elif suffix == ".jpg":
                 assert file_name in ["Illustration.jpg","IllustrationLowRes.jpg","IllustrationBlur.jpg"], f"Unknown illustration file {file_name}"
                 if file_name == "Illustration.jpg": song.illustration = path
-                elif file_name == "IllustrationLowRes.jpg": song.illustration_lowres = path # will not be used
-                elif file_name == "IllustrationBlur.jpg": song.illustration_blur = path # will not be used
+                elif file_name == "IllustrationLowRes.jpg": song.illustration_lowres = path
+                elif file_name == "IllustrationBlur.jpg": song.illustration_blur = path
             root.after(0, lambda cnt=count: progress_bar.config(value=cnt))
             root.after(0, lambda cnt=count: set_info(f"{'正在检查并加载' if check_changes else '正在加载'}: {cnt}/{len(output)}"))
     if check_changes:
@@ -376,10 +378,16 @@ def export():
                     output_chart = get_content(data, ".json")
                     data = get_data(zf, song.illustration, f"illustration for song {song.name}")
                     output_illustration = get_content(data, ".jpg")
+                    data = get_data(zf, song.illustration_lowres, f"illustrationLowRes for song {song.name}")
+                    output_illustration_lowres = get_content(data, ".jpg")
+                    data = get_data(zf, song.illustration_blur, f"illustrationBlur for song {song.name}")
+                    output_illustration_blur = get_content(data, ".jpg")
                     with ZipFile(f"output/[{song.levels[index]} {song.difficulty[index]:.1f}] {sanitize_windows(song.name)} ({song_id}).zip", "w", compression=ZIP_DEFLATED) as output_zf:
                         output_zf.writestr("music.wav", output_music)
                         output_zf.writestr("chart.json", output_chart)
                         output_zf.writestr("illustration.jpg", output_illustration)
+                        output_zf.writestr("illustrationLowRes.jpg", output_illustration_lowres)
+                        output_zf.writestr("illustrationBlur.jpg", output_illustration_blur)
                         output_zf.writestr("info.yml", generate_yaml(song, index))
                     root.after(0, lambda cnt=count: progress_bar.config(value=cnt))
                     root.after(0, lambda cnt=count: set_info(f"正在导出: {cnt}/{len(output_indexes_)}"))
