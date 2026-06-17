@@ -105,7 +105,7 @@ class ToolTip:
             self.window.destroy()
             self.window = None
 
-def get_download_url():
+def get_download_data():
     app_id = 165287
     sign_key = "PeCkE6Fu0B10Vm9BKfPfANwCUAn5POcs"
     web_xua = "V=1&PN=WebApp&LANG=zh_CN&VN_CODE=102&PLT=PC"
@@ -130,7 +130,7 @@ def get_download_url():
     body = f"{params}&sign={sign}"
     with urllib.request.urlopen(url, data=body.encode("utf-8")) as response:
         result = json.loads(response.read().decode("utf-8"))
-    return result["data"]["apk"]["download"]
+    return result["data"]["apk"]
 
 def generate_yaml(song, index):
     data = {
@@ -375,6 +375,60 @@ def clear_search():
     difficulty_max_var.set("")
     search()
 
+def select_path():
+    os.makedirs("input", exist_ok=True)
+    apk_path = filedialog.askopenfilename(
+        title="选择 APK/XAPK 文件",
+        initialdir="input",
+        filetypes=[("APK/XAPK 文件", "*.apk *.xapk")]
+    )
+    if not apk_path: return
+    path_var.set(apk_path)
+    with open("config.json", "w", encoding="utf-8") as f:
+        json.dump({"apk_path": apk_path}, f, ensure_ascii=False, indent=2)
+
+def set_path():
+    if not os.path.exists("config.json"): return
+    with open("config.json", "r", encoding="utf-8") as f:
+        config = json.load(f)
+    apk_path = config.get("apk_path", "")
+    path_var.set(apk_path)
+
+def download():
+    def worker():
+        pass
+    Thread(target=worker, daemon=True).start()
+
+def load(check_changes=False):
+    apk_path = path_var.get()
+    if not apk_path:
+        print(f"Error loading: empty path")
+        set_info("加载失败: 路径为空")
+        return
+    if not os.path.exists(apk_path):
+        print(f"Error loading: APK/XAPK file not found: {apk_path}")
+        set_info("加载失败: APK/XAPK 文件不存在")
+        return
+    songs.clear()
+    output_indexes.clear()
+    candidates_listbox.delete(0, tk.END)
+    set_buttons_state("disabled")
+
+    def worker():
+        print("Info: Starting to check and load" if check_changes else "Info: Starting to load")
+        root.after(0, lambda: set_info(f"{'正在检查并加载' if check_changes else '正在加载'}"))
+        try:
+            load_assets(apk_path, check_changes)
+        except Exception as e:
+            print(f"Error: Failed to load assets: {e}")
+            root.after(0, lambda: songs.clear())
+            root.after(0, lambda: set_info(f"加载资源失败"))
+            root.after(0, lambda: set_buttons_state("normal"))
+        else:
+            root.after(0, lambda: set_buttons_state("normal"))
+            root.after(0, lambda: clear_search()) # to load level_frame
+    Thread(target=worker, daemon=True).start()
+
 def export():
     apk_path = path_var.get()
     if not apk_path:
@@ -431,55 +485,6 @@ def export():
             root.after(0, lambda: set_buttons_state("normal"))
     Thread(target=worker, daemon=True).start()
 
-def select_path():
-    os.makedirs("input", exist_ok=True)
-    apk_path = filedialog.askopenfilename(
-        title="选择 APK/XAPK 文件",
-        initialdir="input",
-        filetypes=[("APK/XAPK 文件", "*.apk *.xapk")]
-    )
-    if not apk_path: return
-    path_var.set(apk_path)
-    with open("config.json", "w", encoding="utf-8") as f:
-        json.dump({"apk_path": apk_path}, f, ensure_ascii=False, indent=2)
-
-def set_path():
-    if not os.path.exists("config.json"): return
-    with open("config.json", "r", encoding="utf-8") as f:
-        config = json.load(f)
-    apk_path = config.get("apk_path", "")
-    path_var.set(apk_path)
-
-def load(check_changes=False):
-    apk_path = path_var.get()
-    if not apk_path:
-        print(f"Error loading: empty path")
-        set_info("加载失败: 路径为空")
-        return
-    if not os.path.exists(apk_path):
-        print(f"Error loading: APK/XAPK file not found: {apk_path}")
-        set_info("加载失败: APK/XAPK 文件不存在")
-        return
-    songs.clear()
-    output_indexes.clear()
-    candidates_listbox.delete(0, tk.END)
-    set_buttons_state("disabled")
-
-    def worker():
-        print("Info: Starting to check and load" if check_changes else "Info: Starting to load")
-        root.after(0, lambda: set_info(f"{'正在检查并加载' if check_changes else '正在加载'}"))
-        try:
-            load_assets(apk_path, check_changes)
-        except Exception as e:
-            print(f"Error: Failed to load assets: {e}")
-            root.after(0, lambda: songs.clear())
-            root.after(0, lambda: set_info(f"加载资源失败"))
-            root.after(0, lambda: set_buttons_state("normal"))
-        else:
-            root.after(0, lambda: set_buttons_state("normal"))
-            root.after(0, lambda: clear_search()) # to load level_frame
-    Thread(target=worker, daemon=True).start()
-
 def select_candidate(event):
     selection = event.widget.curselection()
     if selection:
@@ -501,6 +506,7 @@ def set_info(info):
 
 def set_buttons_state(state):
     path_button.config(state=state)
+    download_button.config(state=state)
     load_button.config(state=state)
     check_load_button.config(state=state)
     clear_button.config(state=state)
@@ -544,15 +550,18 @@ path_entry.grid(row=0, column=0, sticky="ew")
 #
 load_buttons_frame = ttk.Frame(load_frame)
 load_buttons_frame.grid(row=1, column=0, sticky="ew")
-load_buttons_frame.columnconfigure(1, weight=1)
+load_buttons_frame.columnconfigure(2, weight=1)
 #
 path_button = ttk.Button(load_buttons_frame, text="选择文件", width=8, command=select_path)
 path_button.grid(row=0, column=0, sticky="w")
+download_button = ttk.Button(load_buttons_frame, text="下载文件", width=8, command=download)
+download_button.grid(row=0, column=1, sticky="w")
+ToolTip(download_button, "从TapTap下载apk")
 load_button = ttk.Button(load_buttons_frame, text="加载", width=8, command=lambda: load(False))
-load_button.grid(row=0, column=2, sticky="e")
+load_button.grid(row=0, column=3, sticky="e")
 ToolTip(load_button, "快速加载曲目列表")
 check_load_button = ttk.Button(load_buttons_frame, text="检查并加载", width=10, command=lambda: load(True))
-check_load_button.grid(row=0, column=3, sticky="e")
+check_load_button.grid(row=0, column=4, sticky="e")
 ToolTip(check_load_button, "检查资源变化并加载曲目列表")
 
 search_frame = ttk.LabelFrame(root, text="搜索曲目")
@@ -588,7 +597,7 @@ difficulty_max_entry.grid(row=0, column=2, sticky="w")
 special_var = tk.BooleanVar(value=False)
 special_check = ttk.Checkbutton(difficulty_frame, text="SP", variable=special_var, command=toggle_special)
 special_check.grid(row=0, column=3, sticky="w")
-ToolTip(special_check, "愚人节及特殊谱面")
+ToolTip(special_check, "愚人节等特殊谱面")
 #
 clear_button = ttk.Button(search_frame, text="清空", width=8, command=clear_search)
 clear_button.grid(row=2, column=2, sticky="e")
