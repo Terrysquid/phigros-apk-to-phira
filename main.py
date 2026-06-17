@@ -1,3 +1,4 @@
+print("Info: Loading modules")
 import os, json, base64, struct, UnityPy, io, yaml, re, hashlib, random
 from math import floor, ceil
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -395,14 +396,47 @@ def set_path():
     path_var.set(apk_path)
 
 def download():
+    set_buttons_state("disabled")
+
     def worker():
-        pass
+        print("Info: Starting to download")
+        root.after(0, lambda: set_info("正在下载"))
+        try:
+            os.makedirs("input", exist_ok=True)
+            download_data = get_download_data()
+            download_url = download_data["download"]
+            apk_path = os.path.join("input", download_data["name"])
+            root.after(0, lambda: progress_bar.config(maximum=100, value=0))
+            root.after(0, lambda: set_info("正在下载: 0%"))
+            with urllib.request.urlopen(download_url) as response:
+                total = download_data["size"]
+                downloaded = 0
+                with open(apk_path, "wb") as f:
+                    while True:
+                        chunk = response.read(1048576)
+                        if not chunk: break
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                        count = floor(downloaded / total * 100)
+                        root.after(0, lambda cnt=count: progress_bar.config(value=cnt))
+                        root.after(0, lambda cnt=count: set_info(f"正在下载: {cnt}%"))
+            with open("config.json", "w", encoding="utf-8") as f:
+                json.dump({"apk_path": apk_path}, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"Error: Failed to download: {e}")
+            root.after(0, lambda: set_info("下载失败"))
+            root.after(0, lambda: set_buttons_state("normal"))
+        else:
+            root.after(0, lambda: path_var.set(apk_path))
+            print(f"Info: APK downloaded to {apk_path}")
+            root.after(0, lambda: set_info(f"已下载: {download_data['name']}"))
+            root.after(0, lambda: set_buttons_state("normal"))
     Thread(target=worker, daemon=True).start()
 
 def load(check_changes=False):
     apk_path = path_var.get()
     if not apk_path:
-        print(f"Error loading: empty path")
+        print("Error loading: empty path")
         set_info("加载失败: 路径为空")
         return
     if not os.path.exists(apk_path):
@@ -416,15 +450,16 @@ def load(check_changes=False):
 
     def worker():
         print("Info: Starting to check and load" if check_changes else "Info: Starting to load")
-        root.after(0, lambda: set_info(f"{'正在检查并加载' if check_changes else '正在加载'}"))
+        root.after(0, lambda: set_info("正在检查并加载" if check_changes else "正在加载"))
         try:
             load_assets(apk_path, check_changes)
         except Exception as e:
             print(f"Error: Failed to load assets: {e}")
             root.after(0, lambda: songs.clear())
-            root.after(0, lambda: set_info(f"加载资源失败"))
+            root.after(0, lambda: set_info("加载资源失败"))
             root.after(0, lambda: set_buttons_state("normal"))
         else:
+            print("Info: Assets loaded")
             root.after(0, lambda: set_buttons_state("normal"))
             root.after(0, lambda: clear_search()) # to load level_frame
     Thread(target=worker, daemon=True).start()
@@ -432,7 +467,7 @@ def load(check_changes=False):
 def export():
     apk_path = path_var.get()
     if not apk_path:
-        print(f"Error exporting: empty path")
+        print("Error exporting: empty path")
         set_info("导出失败: 路径为空")
         return
     if not os.path.exists(apk_path):
@@ -440,7 +475,7 @@ def export():
         set_info("导出失败: APK/XAPK 文件不存在")
         return
     if not output_indexes:
-        print(f"Error exporting: no candidates selected")
+        print("Error exporting: no candidates selected")
         set_info("导出失败: 无候选曲目")
         return
     output_indexes_ = list(output_indexes) # copy of output_indexes, will not be modified
