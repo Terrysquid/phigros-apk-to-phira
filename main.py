@@ -1,7 +1,10 @@
-import os, json, base64, struct, UnityPy, io, yaml, re, hashlib
+import os, json, base64, struct, UnityPy, io, yaml, re, hashlib, random
 from math import floor, ceil
 from zipfile import ZipFile, ZIP_DEFLATED
 from pathlib import Path
+os.chdir(Path(__file__).resolve().parent)
+import urllib.parse
+import urllib.request
 import tkinter as tk
 from tkinter import ttk, filedialog
 from threading import Thread
@@ -101,6 +104,33 @@ class ToolTip:
         if self.window:
             self.window.destroy()
             self.window = None
+
+def get_download_url():
+    app_id = 165287
+    sign_key = "PeCkE6Fu0B10Vm9BKfPfANwCUAn5POcs"
+    web_xua = "V=1&PN=WebApp&LANG=zh_CN&VN_CODE=102&PLT=PC"
+    app_xua = "V=1&PN=TapTap&LANG=zh_CN&VN_CODE=277000001"
+
+    url = (
+        "https://www.taptap.cn/webapiv2/app/v3/button-flag?" +
+        urllib.parse.urlencode({"X-UA": web_xua, "ids": app_id, "platform": "android"})
+    )
+    request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(request) as response:
+        data = json.loads(response.read().decode("utf-8"))
+    apk_id = data["data"]["list"][0]["list"][0]["download"]["apk_id"]
+
+    url = (
+        "https://api.taptapdada.com/apk/v1/detail?" +
+        urllib.parse.urlencode({"X-UA": app_xua})
+    )
+    nonce = "".join(random.choices("abcdefghijklmnopqrstuvwxyz0123456789", k=5))
+    params = f"id={apk_id}&nonce={nonce}&time={data['now']}"
+    sign = hashlib.md5(f"X-UA={app_xua}&{params}{sign_key}".encode()).hexdigest()
+    body = f"{params}&sign={sign}"
+    with urllib.request.urlopen(url, data=body.encode("utf-8")) as response:
+        result = json.loads(response.read().decode("utf-8"))
+    return result["data"]["apk"]["download"]
 
 def generate_yaml(song, index):
     data = {
@@ -402,7 +432,12 @@ def export():
     Thread(target=worker, daemon=True).start()
 
 def select_path():
-    apk_path = filedialog.askopenfilename(title="选择 APK/XAPK 文件", filetypes=[("APK/XAPK 文件", "*.apk *.xapk")])
+    os.makedirs("input", exist_ok=True)
+    apk_path = filedialog.askopenfilename(
+        title="选择 APK/XAPK 文件",
+        initialdir="input",
+        filetypes=[("APK/XAPK 文件", "*.apk *.xapk")]
+    )
     if not apk_path: return
     path_var.set(apk_path)
     with open("config.json", "w", encoding="utf-8") as f:
@@ -553,7 +588,7 @@ difficulty_max_entry.grid(row=0, column=2, sticky="w")
 special_var = tk.BooleanVar(value=False)
 special_check = ttk.Checkbutton(difficulty_frame, text="SP", variable=special_var, command=toggle_special)
 special_check.grid(row=0, column=3, sticky="w")
-ToolTip(special_check, "定数为0的特殊谱面")
+ToolTip(special_check, "愚人节及特殊谱面")
 #
 clear_button = ttk.Button(search_frame, text="清空", width=8, command=clear_search)
 clear_button.grid(row=2, column=2, sticky="e")
