@@ -405,21 +405,26 @@ def download():
             os.makedirs("input", exist_ok=True)
             download_data = get_download_data()
             download_url = download_data["download"]
-            apk_path = os.path.join("input", download_data["name"])
+            apk_name = sanitize_windows(f"Phigros_{download_data['version_name']}_{download_data['version_code']}.apk")
+            apk_path = os.path.join("input", apk_name)
             root.after(0, lambda: progress_bar.config(maximum=100, value=0))
             root.after(0, lambda: set_info("正在下载: 0%"))
             with urllib.request.urlopen(download_url) as response:
                 total = download_data["size"]
                 downloaded = 0
+                file_md5 = hashlib.md5()
                 with open(apk_path, "wb") as f:
                     while True:
                         chunk = response.read(1048576)
                         if not chunk: break
                         f.write(chunk)
+                        file_md5.update(chunk)
                         downloaded += len(chunk)
                         count = floor(downloaded / total * 100)
                         root.after(0, lambda cnt=count: progress_bar.config(value=cnt))
                         root.after(0, lambda cnt=count: set_info(f"正在下载: {cnt}%"))
+            if file_md5.hexdigest().lower() != download_data["md5"].lower():
+                raise ValueError(f"Expected MD5 {download_data['md5']}, got {file_md5.hexdigest()}")
             with open("config.json", "w", encoding="utf-8") as f:
                 json.dump({"apk_path": apk_path}, f, ensure_ascii=False, indent=2)
         except Exception as e:
@@ -429,7 +434,7 @@ def download():
         else:
             root.after(0, lambda: path_var.set(apk_path))
             print(f"Info: APK downloaded to {apk_path}")
-            root.after(0, lambda: set_info(f"已下载: {download_data['name']}"))
+            root.after(0, lambda: set_info(f"已下载: {apk_name}"))
             root.after(0, lambda: set_buttons_state("normal"))
     Thread(target=worker, daemon=True).start()
 
