@@ -612,6 +612,7 @@ ttk.Label(search_frame, text="曲目名称/ID: ").grid(row=0, column=0, sticky="
 id_var = tk.StringVar()
 id_entry = ttk.Entry(search_frame, width=40, textvariable=id_var)
 id_entry.grid(row=0, column=1, columnspan=3, sticky="ew")
+id_entry.bind("<Return>", lambda event: search())
 #
 ttk.Label(search_frame, text="筛选难度: ").grid(row=1, column=0, sticky="w")
 level_frame = ttk.Frame(search_frame)
