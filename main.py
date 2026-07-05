@@ -406,6 +406,7 @@ def download():
             download_data = get_download_data()
             download_url = download_data["download"]
             apk_name = sanitize_windows(f"Phigros_{download_data['version_name']}_{download_data['version_code']}.apk")
+            print(f"Info: APK name: {apk_name}")
             apk_path = os.path.join("input", apk_name)
             root.after(0, lambda: progress_bar.config(maximum=100, value=0))
             root.after(0, lambda: set_info("正在下载: 0%"))
@@ -480,10 +481,15 @@ def export():
         set_info("导出失败: APK/XAPK 文件不存在")
         return
     if not output_indexes:
-        print("Error exporting: no candidates selected")
+        print("Error exporting: no candidates found")
         set_info("导出失败: 无候选曲目")
         return
-    output_indexes_ = list(output_indexes) # copy of output_indexes, will not be modified
+    selection = candidates_listbox.curselection()
+    if not selection:
+        print("Error exporting: no candidates selected")
+        set_info("导出失败: 未选择候选曲目")
+        return
+    selected_indexes = [output_indexes[i] for i in selection] # selected output_indexes, will not be modified
     set_buttons_state("disabled")
 
     def worker():
@@ -491,10 +497,10 @@ def export():
         root.after(0, lambda: set_info("正在导出"))
         try:
             os.makedirs("output", exist_ok=True)
-            root.after(0, lambda: progress_bar.config(maximum=len(output_indexes_), value=0))
-            root.after(0, lambda: set_info(f"正在导出: 0/{len(output_indexes_)}"))
+            root.after(0, lambda: progress_bar.config(maximum=len(selected_indexes), value=0))
+            root.after(0, lambda: set_info(f"正在导出: 0/{len(selected_indexes)}"))
             with GameZip(apk_path) as zf:
-                for count, (song_id, index) in enumerate(output_indexes_, start=1):
+                for count, (song_id, index) in enumerate(selected_indexes, start=1):
                     song = songs[song_id]
                     data = get_data(zf, song.music[index] or song.default_music, f"music for song {song.name} {song.levels[index]}")
                     output_music = get_content(data, ".wav")
@@ -514,32 +520,27 @@ def export():
                         output_zf.writestr("illustrationBlur.jpg", output_illustration_blur)
                         output_zf.writestr("info.yml", generate_yaml(song, index))
                     root.after(0, lambda cnt=count: progress_bar.config(value=cnt))
-                    root.after(0, lambda cnt=count: set_info(f"正在导出: {cnt}/{len(output_indexes_)}"))
+                    root.after(0, lambda cnt=count: set_info(f"正在导出: {cnt}/{len(selected_indexes)}"))
         except Exception as e:
             print(f"Error: Failed to export: {e}")
             root.after(0, lambda: set_info("导出失败"))
             root.after(0, lambda: set_buttons_state("normal"))
         else:
-            print(f"Info: {len(output_indexes_)} zip file{plural(len(output_indexes_))} written to output/ directory")
-            root.after(0, lambda: set_info(f"已导出 {len(output_indexes_)} 张谱面至 output/ 文件夹"))
+            print(f"Info: {len(selected_indexes)} zip file{plural(len(selected_indexes))} written to output/ directory")
+            root.after(0, lambda: set_info(f"已导出 {len(selected_indexes)} 张谱面至 output/ 文件夹"))
             root.after(0, lambda: set_buttons_state("normal"))
     Thread(target=worker, daemon=True).start()
 
 def select_candidate(event):
     selection = event.widget.curselection()
-    if selection:
-        song_id,index = output_indexes[selection[0]]
-        id_var.set(song_id)
+    song_count = len({output_indexes[i][0] for i in selection})
+    set_info(f"已选择 {song_count} 首曲目 ({len(selection)} 张谱面)")
 
 def double_click_candidate(event):
-    selection = event.widget.curselection()
-    if not selection: return
-    song_id,index = output_indexes[selection[0]]
-    song = songs[song_id]
+    selection = event.widget.nearest(event.y)
+    if selection < 0: return
+    song_id,index = output_indexes[selection]
     id_var.set(song_id)
-    level = level_group(song.levels[index])
-    for l in level_vars: level_vars[l].set(l == level)
-    search()
 
 def set_info(info):
     info_var.set(info)
@@ -650,7 +651,7 @@ candidates_frame.grid(row=2, column=0, padx=10, pady=(0,10), sticky="nsew")
 candidates_frame.columnconfigure(0, weight=1)
 candidates_frame.rowconfigure(0, weight=1)
 #
-candidates_listbox = tk.Listbox(candidates_frame, height=10)
+candidates_listbox = tk.Listbox(candidates_frame, height=10, selectmode=tk.EXTENDED, exportselection=False)
 candidates_listbox.grid(row=0, column=0, sticky="nsew")
 candidates_listbox.bind("<<ListboxSelect>>", select_candidate)
 candidates_listbox.bind("<Double-Button-1>", double_click_candidate)
