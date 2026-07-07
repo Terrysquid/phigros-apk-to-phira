@@ -19,16 +19,21 @@ print("Info: Modules loaded")
 os.makedirs("data", exist_ok=True)
 song_ids_path = "data/song_ids.json"
 asset_hashes_path = "data/asset_hashes.json"
+difficulties_path = "data/difficulties.json"
 
 songs = {}
 song_ids = [] # recorded song IDs, used to check for new songs
-if song_ids_path.exists():
+if os.path.exists(song_ids_path):
     with open(song_ids_path, "r", encoding="utf-8") as f:
         song_ids = json.load(f)
 asset_hashes = {}
-if asset_hashes_path.exists():
+if os.path.exists(asset_hashes_path):
     with open(asset_hashes_path, "r", encoding="utf-8") as f:
         asset_hashes = json.load(f)
+difficulties = {}
+if os.path.exists(difficulties_path):
+    with open(difficulties_path, "r", encoding="utf-8") as f:
+        difficulties = json.load(f)
 output_indexes = [] # saved as list, to get corresponding index with candidates_listbox
 
 def i32(b,p): return struct.unpack_from("<i",b,p)[0], p+4 # int32
@@ -246,6 +251,18 @@ def load_assets(apk_path, check_changes=False):
                 song.preview_time = i["previewTime"]
                 song.preview_end_time = i["previewEndTime"]
                 assert len(song.difficulty) == len(song.charter) == len(song.levels), f"List length inconsistency with {len(song.difficulty)} {len(song.charter)} {len(song.levels)}"
+                if check_changes:
+                    old = difficulties.get(song_id)
+                    new = {level: song.difficulty[j] for j,level in enumerate(song.levels)}
+                    if old != None:
+                        for level,n in new.items():
+                            o = old.get(level)
+                            if o != n:
+                                if o == None or o == 0:
+                                    print(f"Info: New level for {song_id}: {level} ({n:.1f})")
+                                else:
+                                    print(f"Info: Difficulty changed for {song_id} {level}: {o:.1f} -> {n:.1f}")
+                    difficulties[song_id] = new
                 song.music = [""] * len(song.levels)
                 song.charts = [""] * len(song.levels)
         print(f"Info: {len(songs)} songs found in GameInformation")
@@ -335,6 +352,8 @@ def load_assets(apk_path, check_changes=False):
             json.dump(song_ids, f, ensure_ascii=False, indent=2)
         with open(asset_hashes_path, "w", encoding="utf-8") as f:
             json.dump(asset_hashes, f, ensure_ascii=False, indent=2)
+        with open(difficulties_path, "w", encoding="utf-8") as f:
+            json.dump(difficulties, f, ensure_ascii=False, indent=2)
 
 def search():
     output_id = id_var.get()

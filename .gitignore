@@ -1,8 +1,7 @@
 __pycache__/
 input/
 output/
+data/
 *.apk
 globalgamemanagers.assets
 config.json
-song_ids.json
-asset_hashes.json
