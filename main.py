@@ -26,6 +26,7 @@ song_ids = [] # recorded song IDs, used to check for new songs
 if os.path.exists(song_ids_path):
     with open(song_ids_path, "r", encoding="utf-8") as f:
         song_ids = json.load(f)
+new_song_ids = []
 asset_hashes = {}
 if os.path.exists(asset_hashes_path):
     with open(asset_hashes_path, "r", encoding="utf-8") as f:
@@ -216,6 +217,7 @@ def get_content(data, suffix):
         return buf.getvalue()
 
 def load_assets(apk_path, check_changes=False):
+    if check_changes: new_song_ids.clear()
     with GameZip(apk_path) as zf:
         with zf.open("assets/aa/catalog.json") as f:
             j = json.load(f)
@@ -245,6 +247,7 @@ def load_assets(apk_path, check_changes=False):
                 if check_changes and song_id not in song_ids:
                     print(f"Info: New song ID found (GameInformation): {song_id}")
                     song_ids.append(song_id)
+                    new_song_ids.append(song_id)
                 song = songs.setdefault(song_id, Song())
                 song.key = i["songsKey"]
                 song.name = i["songsName"]
@@ -318,6 +321,7 @@ def load_assets(apk_path, check_changes=False):
             if check_changes and song_id not in song_ids:
                 print(f"Info: New song ID found (asset file): {song_id}")
                 song_ids.append(song_id)
+                new_song_ids.append(song_id)
             song = get_song(song_id)
             path = "assets/aa/Android/" + value
             suffix = Path(file_name).suffix.lower()
@@ -328,7 +332,8 @@ def load_assets(apk_path, check_changes=False):
                 old_hash = asset_hashes.get(key)
                 new_hash = hashlib.sha256(get_content(data, suffix)).hexdigest()
                 if old_hash == None:
-                    print(f"Info: New asset found: {key}")
+                    if song_id not in new_song_ids:
+                        print(f"Info: New asset found: {key}")
                 elif old_hash != new_hash:
                     print(f"Info: Asset changed: {key}")
                 asset_hashes[key] = new_hash
@@ -381,6 +386,7 @@ def search():
         song = songs[song_id]
         if output_id in songs and song_id != output_id: continue # if has exact match, skip all non-exact matches
         if not (output_id.lower() in song_id.lower() or output_id.lower() in song.name.lower()): continue # if output_id is "", it will always return True
+        if new_song_var.get() and song_id not in new_song_ids: continue
         trigger = 0
         for index in range(len(song.levels)):
             level = song.levels[index]
@@ -397,11 +403,12 @@ def search():
 def clear_search():
     id_var.set("")
     for l in level_vars: level_vars[l].set(False)
-    special_var.set(False)
     difficulty_min_entry.config(state="normal")
     difficulty_max_entry.config(state="normal")
     difficulty_min_var.set("")
     difficulty_max_var.set("")
+    special_var.set(False)
+    new_song_var.set(False)
     search()
 
 def select_path():
@@ -585,6 +592,7 @@ def set_buttons_state(state):
     export_button.config(state=state)
     id_entry.config(state=state)
     special_check.config(state=state)
+    new_song_check.config(state=state)
     for child in level_frame.winfo_children():
         child.config(state=state)
 
@@ -661,14 +669,20 @@ difficulty_frame.grid(row=2, column=1, sticky="w")
 difficulty_min_var = tk.StringVar()
 difficulty_min_entry = ttk.Entry(difficulty_frame, justify="center", width=4, textvariable=difficulty_min_var)
 difficulty_min_entry.grid(row=0, column=0, sticky="w")
+difficulty_min_entry.bind("<Return>", lambda event: search())
 ttk.Label(difficulty_frame, text="~").grid(row=0, column=1, sticky="w")
 difficulty_max_var = tk.StringVar()
 difficulty_max_entry = ttk.Entry(difficulty_frame, justify="center", width=4, textvariable=difficulty_max_var)
 difficulty_max_entry.grid(row=0, column=2, sticky="w")
+difficulty_max_entry.bind("<Return>", lambda event: search())
 special_var = tk.BooleanVar(value=False)
 special_check = ttk.Checkbutton(difficulty_frame, text="SP", variable=special_var, command=toggle_special)
 special_check.grid(row=0, column=3, sticky="w")
 ToolTip(special_check, "愚人节等特殊谱面")
+new_song_var = tk.BooleanVar(value=False)
+new_song_check = ttk.Checkbutton(difficulty_frame, text="新曲", variable=new_song_var, command=search)
+new_song_check.grid(row=0, column=4, sticky="w")
+new_song_tip = ToolTip(new_song_check, "检查并加载时发现的新曲")
 #
 clear_button = ttk.Button(search_frame, text="清空", width=8, command=clear_search)
 clear_button.grid(row=2, column=2, sticky="e")
