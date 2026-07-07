@@ -16,14 +16,18 @@ except:
     pass
 print("Info: Modules loaded")
 
+os.makedirs("data", exist_ok=True)
+song_ids_path = "data/song_ids.json"
+asset_hashes_path = "data/asset_hashes.json"
+
 songs = {}
 song_ids = [] # recorded song IDs, used to check for new songs
-if os.path.exists("song_ids.json"):
-    with open("song_ids.json", "r", encoding="utf-8") as f:
+if song_ids_path.exists():
+    with open(song_ids_path, "r", encoding="utf-8") as f:
         song_ids = json.load(f)
 asset_hashes = {}
-if os.path.exists("asset_hashes.json"):
-    with open("asset_hashes.json", "r", encoding="utf-8") as f:
+if asset_hashes_path.exists():
+    with open(asset_hashes_path, "r", encoding="utf-8") as f:
         asset_hashes = json.load(f)
 output_indexes = [] # saved as list, to get corresponding index with candidates_listbox
 
@@ -327,9 +331,9 @@ def load_assets(apk_path, check_changes=False):
             root.after(0, lambda cnt=count: progress_bar.config(value=cnt))
             root.after(0, lambda cnt=count: set_info(f"{'正在检查并加载' if check_changes else '正在加载'}: {cnt}/{len(output)}"))
     if check_changes:
-        with open("song_ids.json", "w", encoding="utf-8") as f:
+        with open(song_ids_path, "w", encoding="utf-8") as f:
             json.dump(song_ids, f, ensure_ascii=False, indent=2)
-        with open("asset_hashes.json", "w", encoding="utf-8") as f:
+        with open(asset_hashes_path, "w", encoding="utf-8") as f:
             json.dump(asset_hashes, f, ensure_ascii=False, indent=2)
 
 def search():
