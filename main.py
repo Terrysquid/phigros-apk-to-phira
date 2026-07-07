@@ -44,6 +44,11 @@ def utf16(b,p): length, p = u32(b,p); return b[p:p+length].decode("utf-16"), p+l
 
 def sanitize_windows(name):
     return re.sub(r'[\\/:*?"<>|]', '_', name)
+def project_path(path):
+    try:
+        return str(Path(path).resolve().relative_to(Path.cwd()))
+    except ValueError:
+        return path
 def plural(n): return "s" if n != 1 else ""
 def level_group(level):
     return level if level in ["EZ", "HD", "IN", "AT"] else "Other"
@@ -407,6 +412,7 @@ def select_path():
         filetypes=[("APK/XAPK 文件", "*.apk *.xapk")]
     )
     if not apk_path: return
+    apk_path = project_path(apk_path)
     path_var.set(apk_path)
     with open("config.json", "w", encoding="utf-8") as f:
         json.dump({"apk_path": apk_path}, f, ensure_ascii=False, indent=2)
