@@ -392,13 +392,8 @@ def search():
             is_other = level not in ["EZ", "HD", "IN", "AT"] or difficulty == 0
             if output_levels and not (level in output_levels or (is_other and "Other" in output_levels)): continue
             if not (output_difficulty_min <= difficulty <= output_difficulty_max): continue
-            difficulty = song.difficulty[index]
-            is_other = level not in ["EZ", "HD", "IN", "AT"] or difficulty == 0
-            if output_levels and not (level in output_levels or (is_other and "Other" in output_levels)): continue
-            if not (output_difficulty_min <= difficulty <= output_difficulty_max): continue
             if song.charts[index] == "": continue # use "no chart" as filter condition instead of "difficulty = 0"
             output_indexes.append((song_id,index))
-            candidates_listbox.insert(tk.END, f"[{level} {difficulty:.1f}] {song.name} ({song_id})")
             candidates_listbox.insert(tk.END, f"[{level} {difficulty:.1f}] {song.name} ({song_id})")
             trigger = 1
         song_count += trigger
