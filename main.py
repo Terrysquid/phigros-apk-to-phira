@@ -593,15 +593,9 @@ def set_buttons_state(state):
     id_entry.config(state=state)
     for child in level_frame.winfo_children():
         child.config(state=state)
-    new_song_check.config(state=state)
     difficulty_min_entry.config(state=state)
     difficulty_max_entry.config(state=state)
-    id_entry.config(state=state)
-    for child in level_frame.winfo_children():
-        child.config(state=state)
     new_song_check.config(state=state)
-    difficulty_min_entry.config(state=state)
-    difficulty_max_entry.config(state=state)
     clear_button.config(state=state)
     search_button.config(state=state)
     candidates_listbox.config(state=state)
