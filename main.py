@@ -392,8 +392,13 @@ def search():
             is_other = level not in ["EZ", "HD", "IN", "AT"] or difficulty == 0
             if output_levels and not (level in output_levels or (is_other and "Other" in output_levels)): continue
             if not (output_difficulty_min <= difficulty <= output_difficulty_max): continue
+            difficulty = song.difficulty[index]
+            is_other = level not in ["EZ", "HD", "IN", "AT"] or difficulty == 0
+            if output_levels and not (level in output_levels or (is_other and "Other" in output_levels)): continue
+            if not (output_difficulty_min <= difficulty <= output_difficulty_max): continue
             if song.charts[index] == "": continue # use "no chart" as filter condition instead of "difficulty = 0"
             output_indexes.append((song_id,index))
+            candidates_listbox.insert(tk.END, f"[{level} {difficulty:.1f}] {song.name} ({song_id})")
             candidates_listbox.insert(tk.END, f"[{level} {difficulty:.1f}] {song.name} ({song_id})")
             trigger = 1
         song_count += trigger
@@ -591,6 +596,12 @@ def set_buttons_state(state):
     new_song_check.config(state=state)
     difficulty_min_entry.config(state=state)
     difficulty_max_entry.config(state=state)
+    id_entry.config(state=state)
+    for child in level_frame.winfo_children():
+        child.config(state=state)
+    new_song_check.config(state=state)
+    difficulty_min_entry.config(state=state)
+    difficulty_max_entry.config(state=state)
     clear_button.config(state=state)
     search_button.config(state=state)
     candidates_listbox.config(state=state)
@@ -662,15 +673,19 @@ difficulty_max_var = tk.StringVar()
 difficulty_max_entry = ttk.Entry(difficulty_frame, justify="center", width=4, textvariable=difficulty_max_var)
 difficulty_max_entry.grid(row=0, column=2, sticky="w")
 difficulty_max_entry.bind("<Return>", lambda event: search())
+#
+ttk.Label(search_frame, text="其它筛选: ").grid(row=3, column=0, sticky="w")
+misc_frame = ttk.Frame(search_frame)
+misc_frame.grid(row=3, column=1, sticky="w")
 new_song_var = tk.BooleanVar(value=False)
-new_song_check = ttk.Checkbutton(difficulty_frame, text="新曲", variable=new_song_var, command=search)
-new_song_check.grid(row=0, column=4, sticky="w")
+new_song_check = ttk.Checkbutton(misc_frame, text="新曲", variable=new_song_var, command=search)
+new_song_check.grid(row=0, column=0, sticky="w")
 new_song_tip = ToolTip(new_song_check, "检查并加载时发现的新曲")
 #
 clear_button = ttk.Button(search_frame, text="清空", width=8, command=clear_search)
-clear_button.grid(row=2, column=2, sticky="e")
+clear_button.grid(row=3, column=2, sticky="e")
 search_button = ttk.Button(search_frame, text="搜索", width=8, command=search)
-search_button.grid(row=2, column=3, sticky="e")
+search_button.grid(row=3, column=3, sticky="e")
 
 candidates_frame = ttk.LabelFrame(root, text="候选曲目")
 candidates_frame.grid(row=2, column=0, padx=10, pady=(0,10), sticky="nsew")
