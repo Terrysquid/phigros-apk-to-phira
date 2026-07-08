@@ -22,11 +22,11 @@ asset_hashes_path = "data/asset_hashes.json"
 difficulties_path = "data/difficulties.json"
 
 songs = {}
-song_ids = [] # recorded song IDs, used to check for new songs
+song_ids = set() # recorded song IDs, used to check for new songs
 if os.path.exists(song_ids_path):
     with open(song_ids_path, "r", encoding="utf-8") as f:
-        song_ids = json.load(f)
-new_song_ids = []
+        song_ids = set(json.load(f))
+new_song_ids = set()
 asset_hashes = {}
 if os.path.exists(asset_hashes_path):
     with open(asset_hashes_path, "r", encoding="utf-8") as f:
@@ -244,8 +244,8 @@ def load_assets(apk_path, check_changes=False):
                 song_id = i["songsId"]
                 if check_changes and song_id not in song_ids:
                     print(f"Info: New song ID found (GameInformation): {song_id}")
-                    song_ids.append(song_id)
-                    new_song_ids.append(song_id)
+                    song_ids.add(song_id)
+                    new_song_ids.add(song_id)
                 song = songs.setdefault(song_id, Song())
                 song.key = i["songsKey"]
                 song.name = i["songsName"]
@@ -318,8 +318,8 @@ def load_assets(apk_path, check_changes=False):
             song_id, file_name = key.split("/")
             if check_changes and song_id not in song_ids:
                 print(f"Info: New song ID found (asset file): {song_id}")
-                song_ids.append(song_id)
-                new_song_ids.append(song_id)
+                song_ids.add(song_id)
+                new_song_ids.add(song_id)
             song = get_song(song_id)
             path = "assets/aa/Android/" + value
             suffix = Path(file_name).suffix.lower()
@@ -357,7 +357,7 @@ def load_assets(apk_path, check_changes=False):
             root.after(0, lambda cnt=count: set_info(f"{'正在检查并加载' if check_changes else '正在加载'}: {cnt}/{len(output)}"))
     if check_changes:
         with open(song_ids_path, "w", encoding="utf-8") as f:
-            json.dump(song_ids, f, ensure_ascii=False, indent=2)
+            json.dump(sorted(song_ids), f, ensure_ascii=False, indent=2)
         with open(asset_hashes_path, "w", encoding="utf-8") as f:
             json.dump(asset_hashes, f, ensure_ascii=False, indent=2)
         with open(difficulties_path, "w", encoding="utf-8") as f:
