@@ -389,7 +389,6 @@ def search():
         song = songs[song_id]
         if output_id in songs and song_id != output_id: continue # if has exact match, skip all non-exact matches
         if not (output_id.lower() in song_id.lower() or output_id.lower() in song.name.lower()): continue # if output_id is "", it will always return True
-        if new_song_var.get() and song_id not in new_song_ids: continue
         trigger = 0
         for index in range(len(song.levels)):
             level = song.levels[index]
@@ -397,7 +396,7 @@ def search():
             is_other = level not in ["EZ", "HD", "IN", "AT"] or difficulty == 0
             if output_levels and not (level in output_levels or (is_other and "Other" in output_levels)): continue
             if not (output_difficulty_min <= difficulty <= output_difficulty_max): continue
-            if new_chart_var.get() and (song_id, level) not in new_charts: continue
+            if (new_song_var.get() or new_chart_var.get()) and not ((new_song_var.get() and song_id in new_song_ids) or (new_chart_var.get() and (song_id, level) in new_charts)): continue
             if song.charts[index] == "": continue # use "no chart" as filter condition instead of "difficulty = 0"
             output_indexes.append((song_id,index))
             candidates_listbox.insert(tk.END, f"[{level} {difficulty:.1f}] {song.name} ({song_id})")
