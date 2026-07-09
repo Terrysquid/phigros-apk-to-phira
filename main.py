@@ -579,6 +579,15 @@ def select_candidate(event):
     song_count = len({output_indexes[i][0] for i in selection})
     set_info(f"已选择 {song_count} 首曲目 ({len(selection)} 张谱面)")
 
+def select_all():
+    if len(candidates_listbox.curselection()) == len(output_indexes):
+        candidates_listbox.selection_clear(0, tk.END)
+    else:
+        candidates_listbox.select_set(0, tk.END)
+    selection = candidates_listbox.curselection()
+    song_count = len({output_indexes[i][0] for i in selection})
+    set_info(f"已选择 {song_count} 首曲目 ({len(selection)} 张谱面)")
+
 def double_click_candidate(event):
     selection = event.widget.nearest(event.y)
     if selection < 0: return
@@ -603,6 +612,7 @@ def set_buttons_state(state):
     clear_button.config(state=state)
     search_button.config(state=state)
     candidates_listbox.config(state=state)
+    select_all_button.config(state=state)
     export_button.config(state=state)
 
 root = tk.Tk()
@@ -672,7 +682,7 @@ difficulty_max_entry = ttk.Entry(difficulty_frame, justify="center", width=4, te
 difficulty_max_entry.grid(row=0, column=2, sticky="w")
 difficulty_max_entry.bind("<Return>", lambda event: search())
 #
-ttk.Label(search_frame, text="其它筛选: ").grid(row=3, column=0, sticky="w")
+ttk.Label(search_frame, text="高级筛选: ").grid(row=3, column=0, sticky="w")
 misc_frame = ttk.Frame(search_frame)
 misc_frame.grid(row=3, column=1, sticky="w")
 new_song_var = tk.BooleanVar(value=False)
@@ -712,8 +722,10 @@ bottom_frame.columnconfigure(1, weight=1)
 info_var = tk.StringVar()
 info_label = ttk.Label(bottom_frame, textvariable=info_var)
 info_label.grid(row=0, column=0, sticky="w")
+select_all_button = ttk.Button(bottom_frame, text="全选", width=8, command=select_all)
+select_all_button.grid(row=0, column=2, sticky="e")
 export_button = ttk.Button(bottom_frame, text="导出", width=8, command=export)
-export_button.grid(row=0, column=1, sticky="e")
+export_button.grid(row=0, column=3, sticky="e")
 
 set_path()
 root.mainloop()
