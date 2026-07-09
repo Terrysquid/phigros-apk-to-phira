@@ -397,7 +397,6 @@ def search():
             candidates_listbox.insert(tk.END, f"[{level} {difficulty:.1f}] {song.name} ({song_id})")
             trigger = 1
         song_count += trigger
-    print(f"Info: {song_count} song{plural(song_count)} ({len(output_indexes)} chart{plural(len(output_indexes))}) found")
     set_info(f"找到 {song_count} 首曲目 ({len(output_indexes)} 张谱面)")
 
 def clear_search():
@@ -500,7 +499,10 @@ def load(check_changes=False):
             root.after(0, lambda: set_info("加载资源失败"))
             root.after(0, lambda: set_buttons_state("normal"))
         else:
+            song_count = sum(1 for song in songs.values() if any(song.charts))
+            chart_count = sum(1 for song in songs.values() for chart in song.charts if chart)
             print("Info: Assets loaded")
+            print(f"Info: {song_count} song{plural(song_count)} ({chart_count} chart{plural(chart_count)}) found")
             root.after(0, lambda: set_buttons_state("normal"))
             root.after(0, lambda: clear_search()) # to load level_frame
     Thread(target=worker, daemon=True).start()
