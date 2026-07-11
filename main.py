@@ -328,16 +328,6 @@ def load_assets(apk_path, check_changes=False):
             suffix = Path(file_name).suffix.lower()
             assert suffix in [".wav",".json",".jpg"], f"Unknown suffix {suffix}"
 
-            if check_changes:
-                data = get_data(zf, path, key)
-                old_hash = asset_hashes.get(key)
-                new_hash = hashlib.sha256(get_content(data, suffix)).hexdigest()
-                if old_hash == None:
-                    if song_id not in new_song_ids:
-                        print(f"Info: New asset found: {key}")
-                elif old_hash != new_hash:
-                    print(f"Info: Asset changed: {key}")
-                asset_hashes[key] = new_hash
             if suffix == ".wav":
                 if file_name == "music.wav":
                     song.default_music = path
@@ -351,8 +341,17 @@ def load_assets(apk_path, check_changes=False):
                 level = file_name[6:-5] # Chart_IN.json -> IN
                 add_level(song, level)
                 song.charts[song.levels.index(level)] = path
-                if check_changes and song_id not in new_song_ids and old_hash != new_hash: # not a new song, but asset is new or changed (new_hash will not be None)
-                    new_charts.add((song_id, level))
+                if check_changes:
+                    data = get_data(zf, path, key)
+                    old_hash = asset_hashes.get(key)
+                    new_hash = hashlib.sha256(get_content(data, suffix)).hexdigest()
+                    if song_id not in new_song_ids and old_hash != new_hash:
+                        if old_hash == None:
+                            print(f"Info: New asset found: {key}")
+                        else:
+                            print(f"Info: Asset changed: {key}")
+                        new_charts.add((song_id, level))
+                    asset_hashes[key] = new_hash
             elif suffix == ".jpg":
                 assert file_name in ["Illustration.jpg","IllustrationLowRes.jpg","IllustrationBlur.jpg"], f"Unknown illustration file {file_name}"
                 if file_name == "Illustration.jpg": song.illustration = path
