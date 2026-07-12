@@ -1,5 +1,5 @@
 print("Info: Loading modules")
-import os, json, base64, struct, UnityPy, io, yaml, re, hashlib, random
+import os, json, base64, struct, UnityPy, io, yaml, re, hashlib, random, traceback
 from math import floor, ceil
 from zipfile import ZipFile, ZIP_DEFLATED
 from pathlib import Path
@@ -475,7 +475,8 @@ def download():
             with open("config.json", "w", encoding="utf-8") as f:
                 json.dump({"apk_path": apk_path}, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            print(f"Error: Failed to download: {e}")
+            print(f"Error: Failed to download: {type(e).__name__}: {e}")
+            traceback.print_exc()
             root.after(0, lambda: set_info("下载失败"))
             root.after(0, lambda: set_buttons_state("normal"))
         else:
@@ -506,7 +507,8 @@ def load(check_changes=False):
         try:
             load_assets(apk_path, check_changes)
         except Exception as e:
-            print(f"Error: Failed to load assets: {e}")
+            print(f"Error: Failed to load assets: {type(e).__name__}: {e}")
+            traceback.print_exc()
             root.after(0, lambda: songs.clear())
             root.after(0, lambda: set_info("加载资源失败"))
             root.after(0, lambda: set_buttons_state("normal"))
@@ -571,7 +573,8 @@ def export():
                     root.after(0, lambda cnt=count: progress_bar.config(value=cnt))
                     root.after(0, lambda cnt=count: set_info(f"正在导出: {cnt}/{len(selected_indexes)}"))
         except Exception as e:
-            print(f"Error: Failed to export: {e}")
+            print(f"Error: Failed to export: {type(e).__name__}: {e}")
+            traceback.print_exc()
             root.after(0, lambda: set_info("导出失败"))
             root.after(0, lambda: set_buttons_state("normal"))
         else:
