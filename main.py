@@ -447,6 +447,13 @@ def download():
             apk_name = sanitize_windows(f"Phigros_{download_data['version_name']}_{download_data['version_code']}.apk")
             print(f"Info: APK name: {apk_name}")
             apk_path = os.path.join("input", apk_name)
+            if os.path.exists(apk_path):
+                root.after(0, lambda: set_info(f"已是最新版本: {apk_name}"))
+                root.after(0, lambda: path_var.set(apk_path))
+                with open("config.json", "w", encoding="utf-8") as f:
+                    json.dump({"apk_path": apk_path}, f, ensure_ascii=False, indent=2)
+                root.after(0, lambda: set_buttons_state("normal"))
+                return
             root.after(0, lambda: progress_bar.config(maximum=100, value=0))
             root.after(0, lambda: set_info("正在下载: 0%"))
             with urllib.request.urlopen(download_url) as response:
