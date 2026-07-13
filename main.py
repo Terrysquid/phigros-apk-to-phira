@@ -20,6 +20,7 @@ os.makedirs("data", exist_ok=True)
 song_ids_path = "data/song_ids.json"
 asset_hashes_path = "data/asset_hashes.json"
 difficulties_path = "data/difficulties.json"
+checked_apk_path = "data/checked_apk.json"
 
 songs = {}
 song_ids = set() # recorded song IDs, used to check for new songs
@@ -51,6 +52,9 @@ def project_path(path):
         return str(Path(path).resolve().relative_to(Path.cwd()))
     except ValueError:
         return path
+def file_info(path):
+    stat = os.stat(path)
+    return {"path": str(Path(path).resolve()), "size": stat.st_size, "mtime_ns": stat.st_mtime_ns}
 def plural(n): return "s" if n != 1 else ""
 
 class GameZip:
@@ -366,7 +370,8 @@ def load_assets(apk_path, check_changes=False):
             json.dump(asset_hashes, f, ensure_ascii=False, indent=2)
         with open(difficulties_path, "w", encoding="utf-8") as f:
             json.dump(difficulties, f, ensure_ascii=False, indent=2)
-
+        with open(checked_apk_path, "w", encoding="utf-8") as f:
+            json.dump(file_info(apk_path), f, ensure_ascii=False, indent=2)
 def search():
     output_id = id_var.get()
     output_levels = [level for level in level_vars if level_vars[level].get()]
@@ -493,7 +498,7 @@ def download():
             root.after(0, lambda: set_buttons_state("normal"))
     Thread(target=worker, daemon=True).start()
 
-def load(check_changes=False):
+def load():
     apk_path = path_var.get()
     if not apk_path:
         print("Error loading: empty path")
@@ -503,6 +508,11 @@ def load(check_changes=False):
         print(f"Error loading: APK/XAPK file not found: {apk_path}")
         set_info("加载失败: APK/XAPK 文件不存在")
         return
+    try:
+        with open(checked_apk_path, "r", encoding="utf-8") as f:
+            check_changes = json.load(f) != file_info(apk_path)
+    except:
+        check_changes = True
     songs.clear()
     output_indexes.clear()
     candidates_listbox.delete(0, tk.END)
@@ -617,7 +627,6 @@ def set_buttons_state(state):
     path_button.config(state=state)
     download_button.config(state=state)
     load_button.config(state=state)
-    check_load_button.config(state=state)
     id_entry.config(state=state)
     for child in level_frame.winfo_children():
         child.config(state=state)
@@ -657,12 +666,9 @@ path_button.grid(row=0, column=0, sticky="w")
 download_button = ttk.Button(load_buttons_frame, text="下载文件", width=8, command=download)
 download_button.grid(row=0, column=1, sticky="w")
 ToolTip(download_button, "从TapTap下载apk")
-load_button = ttk.Button(load_buttons_frame, text="加载", width=8, command=lambda: load(False))
+load_button = ttk.Button(load_buttons_frame, text="加载", width=8, command=load)
 load_button.grid(row=0, column=3, sticky="e")
-ToolTip(load_button, "快速加载曲目列表")
-check_load_button = ttk.Button(load_buttons_frame, text="检查并加载", width=10, command=lambda: load(True))
-check_load_button.grid(row=0, column=4, sticky="e")
-ToolTip(check_load_button, "检查资源变化并加载曲目列表")
+ToolTip(load_button, "自动检查并加载曲目列表")
 
 search_frame = ttk.LabelFrame(root, text="搜索曲目")
 search_frame.grid(row=1, column=0, padx=10, pady=(0,10), sticky="ew")
