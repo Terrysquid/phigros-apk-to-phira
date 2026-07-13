@@ -8,7 +8,7 @@ import urllib.parse
 import urllib.request
 import tkinter as tk
 from tkinter import ttk, filedialog
-from threading import Thread
+from threading import Thread, Event
 try:
     import ctypes
     ctypes.windll.shcore.SetProcessDpiAwareness(1)
@@ -448,12 +448,19 @@ def download():
             print(f"Info: APK name: {apk_name}")
             apk_path = os.path.join("input", apk_name)
             if os.path.exists(apk_path):
-                root.after(0, lambda: set_info(f"已是最新版本: {apk_name}"))
-                root.after(0, lambda: path_var.set(apk_path))
-                with open("config.json", "w", encoding="utf-8") as f:
-                    json.dump({"apk_path": apk_path}, f, ensure_ascii=False, indent=2)
-                root.after(0, lambda: set_buttons_state("normal"))
-                return
+                replace = False
+                event = Event()
+                def ask_replace():
+                    nonlocal replace
+                    replace = tk.messagebox.askyesno("确认", f"已存在文件: {apk_name}，是否替换？")
+                    event.set()
+                root.after(0, ask_replace)
+                event.wait()
+                if not replace:
+                    print("Info: Download cancelled")
+                    root.after(0, lambda: set_info("已取消下载"))
+                    root.after(0, lambda: set_buttons_state("normal"))
+                    return
             root.after(0, lambda: progress_bar.config(maximum=100, value=0))
             root.after(0, lambda: set_info("正在下载: 0%"))
             with urllib.request.urlopen(download_url) as response:
