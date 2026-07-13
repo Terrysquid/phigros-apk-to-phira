@@ -371,7 +371,11 @@ def load_assets(apk_path, check_changes=False):
         with open(difficulties_path, "w", encoding="utf-8") as f:
             json.dump(difficulties, f, ensure_ascii=False, indent=2)
         with open(checked_apk_path, "w", encoding="utf-8") as f:
-            json.dump(file_info(apk_path), f, ensure_ascii=False, indent=2)
+            json.dump({
+                "file": file_info(apk_path),
+                "new_song_ids": list(new_song_ids),
+                "new_charts": [list(i) for i in new_charts]
+            }, f, ensure_ascii=False, indent=2)
 def search():
     output_id = id_var.get()
     output_levels = [level for level in level_vars if level_vars[level].get()]
@@ -510,7 +514,13 @@ def load():
         return
     try:
         with open(checked_apk_path, "r", encoding="utf-8") as f:
-            check_changes = json.load(f) != file_info(apk_path)
+            checked_apk = json.load(f)
+            check_changes = checked_apk.get("file") != file_info(apk_path)
+            if not check_changes:
+                new_song_ids.clear()
+                new_song_ids.update(checked_apk.get("new_song_ids", []))
+                new_charts.clear()
+                new_charts.update([tuple(i) for i in checked_apk.get("new_charts", [])])
     except:
         check_changes = True
     songs.clear()
