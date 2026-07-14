@@ -703,7 +703,7 @@ for level in ["EZ", "HD", "IN", "AT", "Other"]:
 #
 ttk.Label(search_frame, text="筛选定数: ").grid(row=2, column=0, sticky="w")
 difficulty_frame = ttk.Frame(search_frame)
-difficulty_frame.grid(row=2, column=1, sticky="w")
+difficulty_frame.grid(row=2, column=1, columnspan=3, sticky="w")
 difficulty_min_var = tk.StringVar()
 difficulty_min_entry = ttk.Entry(difficulty_frame, justify="center", width=4, textvariable=difficulty_min_var)
 difficulty_min_entry.grid(row=0, column=0, sticky="w")
