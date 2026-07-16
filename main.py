@@ -37,6 +37,13 @@ difficulties = {}
 if os.path.exists(difficulties_path):
     with open(difficulties_path, "r", encoding="utf-8") as f:
         difficulties = json.load(f)
+config = {
+    "apk_path": "",
+    "extra_illustration": True
+}
+if os.path.exists("config.json"):
+    with open("config.json", "r", encoding="utf-8") as f:
+        config.update(json.load(f))
 output_indexes = [] # saved as list, to get corresponding index with candidates_listbox
 
 def i32(b,p): return struct.unpack_from("<i",b,p)[0], p+4 # int32
@@ -163,11 +170,12 @@ def generate_yaml(song, index):
         "format": "pgr",
         "music": "music.wav",
         "illustration": "illustration.jpg",
-        "illustrationLowRes": "illustrationLowRes.jpg",
-        "illustrationBlur": "illustrationBlur.jpg",
         "previewStart": song.preview_time,
         "previewEnd": song.preview_end_time
     }
+    if config["extra_illustration"]:
+        data["illustrationLowRes"] = "illustrationLowRes.jpg"
+        data["illustrationBlur"] = "illustrationBlur.jpg"
     data = {k: v for k, v in data.items() if v != ""}
     return yaml.safe_dump(data, allow_unicode=True, sort_keys=False)
 
@@ -423,6 +431,10 @@ def clear_search():
     new_chart_var.set(False)
     search()
 
+def save_config():
+    with open("config.json", "w", encoding="utf-8") as f:
+        json.dump(config, f, ensure_ascii=False, indent=2)
+
 def select_path():
     os.makedirs("input", exist_ok=True)
     apk_path = filedialog.askopenfilename(
@@ -433,14 +445,11 @@ def select_path():
     if not apk_path: return
     apk_path = project_path(apk_path)
     path_var.set(apk_path)
-    with open("config.json", "w", encoding="utf-8") as f:
-        json.dump({"apk_path": apk_path}, f, ensure_ascii=False, indent=2)
+    config["apk_path"] = apk_path
+    save_config()
 
 def set_path():
-    if not os.path.exists("config.json"): return
-    with open("config.json", "r", encoding="utf-8") as f:
-        config = json.load(f)
-    apk_path = config.get("apk_path", "")
+    apk_path = config["apk_path"]
     path_var.set(apk_path)
 
 def download():
@@ -488,8 +497,8 @@ def download():
                         root.after(0, lambda cnt=count: set_info(f"正在下载: {cnt}%"))
             if file_md5.hexdigest().lower() != download_data["md5"].lower():
                 raise ValueError(f"Expected MD5 {download_data['md5']}, got {file_md5.hexdigest()}")
-            with open("config.json", "w", encoding="utf-8") as f:
-                json.dump({"apk_path": apk_path}, f, ensure_ascii=False, indent=2)
+            config["apk_path"] = apk_path
+            save_config()
         except Exception as e:
             print(f"Error: Failed to download: {type(e).__name__}: {e}")
             traceback.print_exc()
@@ -586,16 +595,18 @@ def export():
                     output_chart = get_content(data, ".json")
                     data = get_data(zf, song.illustration, f"illustration for song {song.name}")
                     output_illustration = get_content(data, ".jpg")
-                    data = get_data(zf, song.illustration_lowres, f"illustrationLowRes for song {song.name}")
-                    output_illustration_lowres = get_content(data, ".jpg")
-                    data = get_data(zf, song.illustration_blur, f"illustrationBlur for song {song.name}")
-                    output_illustration_blur = get_content(data, ".jpg")
+                    if config["extra_illustration"]:
+                        data = get_data(zf, song.illustration_lowres, f"illustrationLowRes for song {song.name}")
+                        output_illustration_lowres = get_content(data, ".jpg")
+                        data = get_data(zf, song.illustration_blur, f"illustrationBlur for song {song.name}")
+                        output_illustration_blur = get_content(data, ".jpg")
                     with ZipFile(f"output/[{song.levels[index]} {song.difficulty[index]:.1f}] {sanitize_windows(song.name)} ({song_id}).zip", "w", compression=ZIP_DEFLATED) as output_zf:
                         output_zf.writestr("music.wav", output_music)
                         output_zf.writestr("chart.json", output_chart)
                         output_zf.writestr("illustration.jpg", output_illustration)
-                        output_zf.writestr("illustrationLowRes.jpg", output_illustration_lowres)
-                        output_zf.writestr("illustrationBlur.jpg", output_illustration_blur)
+                        if config["extra_illustration"]:
+                            output_zf.writestr("illustrationLowRes.jpg", output_illustration_lowres)
+                            output_zf.writestr("illustrationBlur.jpg", output_illustration_blur)
                         output_zf.writestr("info.yml", generate_yaml(song, index))
                     root.after(0, lambda cnt=count: progress_bar.config(value=cnt))
                     root.after(0, lambda cnt=count: set_info(f"正在导出: {cnt}/{len(selected_indexes)}"))
@@ -632,6 +643,39 @@ def double_click_candidate(event):
 
 def set_info(info):
     info_var.set(info)
+
+def settings():
+    window = tk.Toplevel(root)
+    window.title("设置")
+    window.transient(root)
+    window.columnconfigure(0, weight=1)
+
+    def apply():
+        config["extra_illustration"] = extra_illustration_var.get()
+        save_config()
+        window.destroy()
+
+    settings_frame = ttk.Frame(window)
+    settings_frame.grid(row=0, column=0, padx=10, pady=10, sticky="w")
+    #
+    extra_illustration_var = tk.BooleanVar(value=config["extra_illustration"]) # export illustrationLowRes and illustrationBlur
+    extra_illustration_check = ttk.Checkbutton(settings_frame, text="导出 LowRes/Blur 曲绘", variable=extra_illustration_var)
+    extra_illustration_check.grid(row=0, column=0, sticky="w")
+
+    setting_buttons_frame = ttk.Frame(window)
+    setting_buttons_frame.grid(row=1, column=0, padx=10, pady=(0,10), sticky="ew")
+    setting_buttons_frame.columnconfigure(0, weight=1)
+    #
+    cancel_button = ttk.Button(setting_buttons_frame, text="取消", width=6, command=window.destroy)
+    cancel_button.grid(row=0, column=1, sticky="e")
+    apply_button = ttk.Button(setting_buttons_frame, text="应用", width=6, command=apply)
+    apply_button.grid(row=0, column=2, sticky="e")
+
+    window.update_idletasks()
+    x = root.winfo_rootx() + (root.winfo_width() - window.winfo_width()) // 2
+    y = root.winfo_rooty() + (root.winfo_height() - window.winfo_height()) // 2
+    window.geometry(f"+{x}+{y}")
+    window.grab_set()
 
 def set_buttons_state(state):
     path_button.config(state=state)
@@ -752,9 +796,9 @@ bottom_frame = ttk.Frame(root)
 bottom_frame.grid(row=4, column=0, padx=10, pady=(0,10), sticky="ew")
 bottom_frame.columnconfigure(1, weight=1)
 #
-info_var = tk.StringVar()
-settings_button = ttk.Button(bottom_frame, text="设置", width=6)
+settings_button = ttk.Button(bottom_frame, text="设置", width=6, command=settings)
 settings_button.grid(row=0, column=0, sticky="w")
+info_var = tk.StringVar()
 info_label = ttk.Label(bottom_frame, textvariable=info_var, anchor="center")
 info_label.grid(row=0, column=1, sticky="ew")
 select_all_button = ttk.Button(bottom_frame, text="全选", width=6, command=select_all)
