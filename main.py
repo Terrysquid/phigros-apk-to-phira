@@ -468,7 +468,7 @@ def download():
             os.makedirs("input", exist_ok=True)
             download_data = get_download_data()
             download_url = download_data["download"]
-            apk_name = sanitize_windows(f"Phigros_{download_data['version_name']}_{download_data['version_code']}.apk")
+            apk_name = sanitize_windows(f"Phigros_{download_data['version_name']}({download_data['version_code']}).apk")
             print(f"Info: APK name: {apk_name}")
             apk_path = os.path.join("input", apk_name)
             if os.path.exists(apk_path):
