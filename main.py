@@ -216,13 +216,13 @@ def get_data(zf, path, description):
     return data
 
 def get_content(data, suffix):
-    assert suffix in [".wav",".json",".jpg"], f"Unknown suffix {suffix}"
+    assert suffix in [".wav",".json",".jpg",".png"], f"Unknown suffix {suffix}"
     if suffix == ".wav":
         assert len(data.samples) == 1, f"Expected 1 sample, got {len(data.samples)}"
         return next(iter(data.samples.values()))
     if suffix == ".json":
         return data.m_Script.encode()
-    if suffix == ".jpg":
+    if suffix in [".jpg",".png"]:
         buf = io.BytesIO()
         data.image.save(buf, "JPEG")
         return buf.getvalue()
@@ -244,6 +244,8 @@ def load_assets(apk_path, check_changes=False):
         data_entry = base64.b64decode(j["m_EntryDataString"])
         with open("typetree.json") as f: # extracted using Il2CppDumper and TypeTreeGenerator, from libil2cpp.so and global-metadata.dat
             typetree = json.load(f)
+        with open("typetree_legacy.json", encoding="utf-8") as f:
+            typetree_legacy = json.load(f)
         print("Info: Input files found")
 
         game_information = None
@@ -251,7 +253,11 @@ def load_assets(apk_path, check_changes=False):
             if obj.type.name != "MonoBehaviour": continue
             data = obj.read(check_read=False)
             if data.m_Script.read().m_Name == "GameInformation":
-                game_information = obj.read_typetree(typetree["GameInformation"])
+                try:
+                    game_information = obj.read_typetree(typetree["GameInformation"])
+                except ValueError:
+                    print("Info: Typetree failed, trying legacy typetree")
+                    game_information = obj.read_typetree(typetree_legacy["GameInformation"])
                 break
         assert game_information != None, "GameInformation not found"
         for k,v in game_information["song"].items():
@@ -270,7 +276,7 @@ def load_assets(apk_path, check_changes=False):
                 song.composer = i["composer"]
                 song.levels = i["levels"]
                 song.preview_time = i["previewTime"]
-                song.preview_end_time = i["previewEndTime"]
+                song.preview_end_time = i.get("previewEndTime", "")
                 assert len(song.difficulty) == len(song.charter) == len(song.levels), f"List length inconsistency with {len(song.difficulty)} {len(song.charter)} {len(song.levels)}"
                 if check_changes:
                     old = difficulties.get(song_id)
@@ -338,7 +344,7 @@ def load_assets(apk_path, check_changes=False):
             song = get_song(song_id)
             path = "assets/aa/Android/" + value
             suffix = Path(file_name).suffix.lower()
-            assert suffix in [".wav",".json",".jpg"], f"Unknown suffix {suffix}"
+            assert suffix in [".wav",".json",".jpg",".png"], f"Unknown suffix {suffix}"
 
             if suffix == ".wav":
                 if file_name == "music.wav":
@@ -364,11 +370,11 @@ def load_assets(apk_path, check_changes=False):
                             print(f"Info: Asset changed: {key}")
                         new_charts.add((song_id, level))
                     asset_hashes[key] = new_hash
-            elif suffix == ".jpg":
-                assert file_name in ["Illustration.jpg","IllustrationLowRes.jpg","IllustrationBlur.jpg"], f"Unknown illustration file {file_name}"
-                if file_name == "Illustration.jpg": song.illustration = path
-                elif file_name == "IllustrationLowRes.jpg": song.illustration_lowres = path
-                elif file_name == "IllustrationBlur.jpg": song.illustration_blur = path
+            elif suffix in [".jpg",".png"]:
+                assert file_name in ["Illustration.jpg","IllustrationLowRes.jpg","IllustrationBlur.jpg","Illustration.png","IllustrationLowRes.png","IllustrationBlur.png"], f"Unknown illustration file {file_name}"
+                if file_name in ["Illustration.jpg","Illustration.png"]: song.illustration = path
+                elif file_name in ["IllustrationLowRes.jpg","IllustrationLowRes.png"]: song.illustration_lowres = path
+                elif file_name in ["IllustrationBlur.jpg","IllustrationBlur.png"]: song.illustration_blur = path
             root.after(0, lambda cnt=count: progress_bar.config(value=cnt))
             root.after(0, lambda cnt=count: set_info(f"{'正在检查并加载' if check_changes else '正在加载'}: {cnt}/{len(output)}"))
     if check_changes:
