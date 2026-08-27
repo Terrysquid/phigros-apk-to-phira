@@ -255,7 +255,7 @@ def load_assets(apk_path, check_changes=False):
             if data.m_Script.read().m_Name == "GameInformation":
                 try:
                     game_information = obj.read_typetree(typetree["GameInformation"])
-                except ValueError:
+                except (ValueError, EOFError):
                     print("Info: Typetree failed, trying legacy typetree")
                     game_information = obj.read_typetree(typetree_legacy["GameInformation"])
                 break
@@ -276,7 +276,7 @@ def load_assets(apk_path, check_changes=False):
                 song.composer = i["composer"]
                 song.levels = i["levels"]
                 song.preview_time = i["previewTime"]
-                song.preview_end_time = i.get("previewEndTime", "")
+                song.preview_end_time = i.get("previewEndTime", "") # legacy versions missing previewEndTime
                 assert len(song.difficulty) == len(song.charter) == len(song.levels), f"List length inconsistency with {len(song.difficulty)} {len(song.charter)} {len(song.levels)}"
                 if check_changes:
                     old = difficulties.get(song_id)
