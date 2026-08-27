@@ -259,7 +259,7 @@ def load_assets(apk_path, check_changes=False):
                         game_information = obj.read_typetree(typetree["GameInformation"])
                     except (ValueError, EOFError):
                         print("Info: Typetree failed, trying legacy typetree")
-                        game_information = obj.read_typetree(typetree_legacy["GameInformation"])
+                        game_information = obj.read_typetree(typetree_legacy["GameInformation"], check_read=False)
                     break
             if game_information != None: break
         assert game_information != None, "GameInformation not found"
