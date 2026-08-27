@@ -62,6 +62,19 @@ def project_path(path):
 def file_info(path):
     stat = os.stat(path)
     return {"path": str(Path(path).resolve()), "size": stat.st_size, "mtime_ns": stat.st_mtime_ns}
+def get_version_code(apk_path):
+    path = Path(apk_path)
+    if path.suffix.lower() == ".xapk":
+        try:
+            with ZipFile(path) as zf:
+                with zf.open("manifest.json") as f:
+                    return int(json.load(f)["version_code"])
+        except:
+            pass
+    match = re.search(r"\((\d+)\)", path.name)
+    if match:
+        return int(match[1])
+    return None
 def plural(n): return "s" if n != 1 else ""
 
 class GameZip:
@@ -251,8 +264,14 @@ def load_assets(apk_path, check_changes=False):
                 if obj.type.name != "MonoBehaviour": continue
                 data = obj.read(check_read=False)
                 if data.m_Script.read().m_Name == "GameInformation":
-                    typetree_version = lambda path: int(re.fullmatch(r"typetree_(\d+).*\.json", path.name)[1])
-                    for typetree_path in sorted(Path("typetrees").glob("typetree_*.json"), key=typetree_version, reverse=True): # extracted using Il2CppDumper and TypeTreeGenerator, from libil2cpp.so and global-metadata.dat
+                    get_typetree_version_code = lambda path: int(re.fullmatch(r"typetree_(\d+).*\.json", path.name)[1])
+                    version_code = get_version_code(apk_path)
+                    if version_code != None: print(f"Info: Got version code {version_code}")
+                    for typetree_path in sorted(Path("typetrees").glob("typetree_*.json"), key=get_typetree_version_code, reverse=True): # extracted using Il2CppDumper and TypeTreeGenerator, from libil2cpp.so and global-metadata.dat
+                        typetree_version_code = get_typetree_version_code(typetree_path)
+                        if version_code != None and version_code < typetree_version_code:
+                            print(f"Info: Skipped typetree {typetree_path.name} for incompatible version code")
+                            continue
                         with open(typetree_path, encoding="utf-8") as f:
                             typetree = json.load(f)
                         try:
