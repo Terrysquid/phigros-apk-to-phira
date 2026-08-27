@@ -7,7 +7,7 @@
       "m_Level": 0
     },
     {
-      "m_Type": "PPtr\u003CGameObject\u003E",
+      "m_Type": "PPtr<GameObject>",
       "m_Name": "m_GameObject",
       "m_MetaFlag": 0,
       "m_Level": 1
@@ -31,7 +31,7 @@
       "m_Level": 1
     },
     {
-      "m_Type": "PPtr\u003CMonoScript\u003E",
+      "m_Type": "PPtr<MonoScript>",
       "m_Name": "m_Script",
       "m_MetaFlag": 0,
       "m_Level": 1
@@ -337,7 +337,7 @@
       "m_Level": 4
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "judgeLineImages",
       "m_MetaFlag": 0,
       "m_Level": 2
@@ -367,7 +367,7 @@
       "m_Level": 5
     },
     {
-      "m_Type": "PPtr\u003CSprite\u003E",
+      "m_Type": "PPtr<Sprite>",
       "m_Name": "image",
       "m_MetaFlag": 0,
       "m_Level": 5
@@ -385,7 +385,7 @@
       "m_Level": 6
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "levelMods",
       "m_MetaFlag": 0,
       "m_Level": 2
@@ -493,7 +493,7 @@
       "m_Level": 1
     },
     {
-      "m_Type": "PPtr\u003CGameObject\u003E",
+      "m_Type": "PPtr<GameObject>",
       "m_Name": "background",
       "m_MetaFlag": 0,
       "m_Level": 1
@@ -511,7 +511,7 @@
       "m_Level": 2
     },
     {
-      "m_Type": "PPtr\u003CRawImage\u003E",
+      "m_Type": "PPtr<RawImage>",
       "m_Name": "sceneSwitchMask",
       "m_MetaFlag": 0,
       "m_Level": 1
@@ -529,7 +529,7 @@
       "m_Level": 2
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "noteCodes",
       "m_MetaFlag": 0,
       "m_Level": 1
@@ -559,7 +559,7 @@
       "m_Level": 1
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "challengeSongItems",
       "m_MetaFlag": 0,
       "m_Level": 1
@@ -889,7 +889,7 @@
       "m_Level": 9
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "unlockInfo",
       "m_MetaFlag": 0,
       "m_Level": 9
@@ -931,7 +931,7 @@
       "m_Level": 13
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "levelMods",
       "m_MetaFlag": 0,
       "m_Level": 6
@@ -955,7 +955,7 @@
       "m_Level": 8
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "levelMods",
       "m_MetaFlag": 0,
       "m_Level": 9
@@ -1039,7 +1039,7 @@
       "m_Level": 5
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "records",
       "m_MetaFlag": 0,
       "m_Level": 5
@@ -1159,7 +1159,7 @@
       "m_Level": 7
     },
     {
-      "m_Type": "PPtr\u003CSongListItem\u003E",
+      "m_Type": "PPtr<SongListItem>",
       "m_Name": "selectorItemUpside",
       "m_MetaFlag": 0,
       "m_Level": 5
@@ -1177,7 +1177,7 @@
       "m_Level": 6
     },
     {
-      "m_Type": "PPtr\u003CSongListItem\u003E",
+      "m_Type": "PPtr<SongListItem>",
       "m_Name": "selectorItemDownside",
       "m_MetaFlag": 0,
       "m_Level": 5
@@ -1201,7 +1201,7 @@
       "m_Level": 5
     },
     {
-      "m_Type": "PPtr\u003CAddressableImageLoaderWithLowResPreview\u003E",
+      "m_Type": "PPtr<AddressableImageLoaderWithLowResPreview>",
       "m_Name": "cover",
       "m_MetaFlag": 0,
       "m_Level": 5
@@ -1219,7 +1219,7 @@
       "m_Level": 6
     },
     {
-      "m_Type": "PPtr\u003CRectTransform\u003E",
+      "m_Type": "PPtr<RectTransform>",
       "m_Name": "coverRect",
       "m_MetaFlag": 0,
       "m_Level": 5
@@ -1237,7 +1237,7 @@
       "m_Level": 6
     },
     {
-      "m_Type": "PPtr\u003CGameObject\u003E",
+      "m_Type": "PPtr<GameObject>",
       "m_Name": "background",
       "m_MetaFlag": 0,
       "m_Level": 5
@@ -1255,7 +1255,7 @@
       "m_Level": 6
     },
     {
-      "m_Type": "PPtr\u003CAddressableImageLoader\u003E",
+      "m_Type": "PPtr<AddressableImageLoader>",
       "m_Name": "backgroundImage",
       "m_MetaFlag": 0,
       "m_Level": 5
@@ -1273,7 +1273,7 @@
       "m_Level": 6
     },
     {
-      "m_Type": "PPtr\u003CGameObject\u003E",
+      "m_Type": "PPtr<GameObject>",
       "m_Name": "lockMask",
       "m_MetaFlag": 0,
       "m_Level": 5
@@ -1291,7 +1291,7 @@
       "m_Level": 6
     },
     {
-      "m_Type": "PPtr\u003CPreviewClipPlayer\u003E",
+      "m_Type": "PPtr<PreviewClipPlayer>",
       "m_Name": "previewClipPlayer",
       "m_MetaFlag": 0,
       "m_Level": 5
@@ -1363,7 +1363,7 @@
       "m_Level": 5
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "noteCodes",
       "m_MetaFlag": 0,
       "m_Level": 4
@@ -1387,7 +1387,7 @@
       "m_Level": 6
     },
     {
-      "m_Type": "PPtr\u003CMoneyControl\u003E",
+      "m_Type": "PPtr<MoneyControl>",
       "m_Name": "moneyControl",
       "m_MetaFlag": 0,
       "m_Level": 1
@@ -1405,7 +1405,7 @@
       "m_Level": 2
     },
     {
-      "m_Type": "PPtr\u003CGetCollectionControl\u003E",
+      "m_Type": "PPtr<GetCollectionControl>",
       "m_Name": "getCollectionControl",
       "m_MetaFlag": 0,
       "m_Level": 1
@@ -1603,7 +1603,7 @@
       "m_Level": 7
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "songs",
       "m_MetaFlag": 0,
       "m_Level": 5
@@ -1657,7 +1657,7 @@
       "m_Level": 8
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "unlockInfo",
       "m_MetaFlag": 0,
       "m_Level": 8
@@ -1705,7 +1705,7 @@
       "m_Level": 8
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "secretInfo",
       "m_MetaFlag": 0,
       "m_Level": 8
@@ -1885,7 +1885,7 @@
       "m_Level": 1
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "mainSongs",
       "m_MetaFlag": 0,
       "m_Level": 2
@@ -2203,7 +2203,7 @@
       "m_Level": 8
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "unlockInfo",
       "m_MetaFlag": 0,
       "m_Level": 8
@@ -2245,7 +2245,7 @@
       "m_Level": 12
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "levelMods",
       "m_MetaFlag": 0,
       "m_Level": 5
@@ -2269,7 +2269,7 @@
       "m_Level": 7
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "levelMods",
       "m_MetaFlag": 0,
       "m_Level": 8
@@ -2311,43 +2311,7 @@
       "m_Level": 12
     },
     {
-      "m_Type": "bool",
-      "m_Name": "isCnLimited",
-      "m_MetaFlag": 16384,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "bool",
-      "m_Name": "hasDifferentMusic",
-      "m_MetaFlag": 16384,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "differentMusic",
-      "m_MetaFlag": 0,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "previewClipDifficulty",
-      "m_MetaFlag": 0,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "bool",
-      "m_Name": "hasDifferentCover",
-      "m_MetaFlag": 16384,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "differentCover",
-      "m_MetaFlag": 0,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "extraSongs",
       "m_MetaFlag": 0,
       "m_Level": 2
@@ -2665,7 +2629,7 @@
       "m_Level": 8
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "unlockInfo",
       "m_MetaFlag": 0,
       "m_Level": 8
@@ -2707,7 +2671,7 @@
       "m_Level": 12
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "levelMods",
       "m_MetaFlag": 0,
       "m_Level": 5
@@ -2731,7 +2695,7 @@
       "m_Level": 7
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "levelMods",
       "m_MetaFlag": 0,
       "m_Level": 8
@@ -2773,43 +2737,7 @@
       "m_Level": 12
     },
     {
-      "m_Type": "bool",
-      "m_Name": "isCnLimited",
-      "m_MetaFlag": 16384,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "bool",
-      "m_Name": "hasDifferentMusic",
-      "m_MetaFlag": 16384,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "differentMusic",
-      "m_MetaFlag": 0,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "previewClipDifficulty",
-      "m_MetaFlag": 0,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "bool",
-      "m_Name": "hasDifferentCover",
-      "m_MetaFlag": 16384,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "differentCover",
-      "m_MetaFlag": 0,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "sideStorySongs",
       "m_MetaFlag": 0,
       "m_Level": 2
@@ -3127,7 +3055,7 @@
       "m_Level": 8
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "unlockInfo",
       "m_MetaFlag": 0,
       "m_Level": 8
@@ -3169,7 +3097,7 @@
       "m_Level": 12
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "levelMods",
       "m_MetaFlag": 0,
       "m_Level": 5
@@ -3193,7 +3121,7 @@
       "m_Level": 7
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "levelMods",
       "m_MetaFlag": 0,
       "m_Level": 8
@@ -3235,43 +3163,7 @@
       "m_Level": 12
     },
     {
-      "m_Type": "bool",
-      "m_Name": "isCnLimited",
-      "m_MetaFlag": 16384,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "bool",
-      "m_Name": "hasDifferentMusic",
-      "m_MetaFlag": 16384,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "differentMusic",
-      "m_MetaFlag": 0,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "previewClipDifficulty",
-      "m_MetaFlag": 0,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "bool",
-      "m_Name": "hasDifferentCover",
-      "m_MetaFlag": 16384,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "differentCover",
-      "m_MetaFlag": 0,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "otherSongs",
       "m_MetaFlag": 0,
       "m_Level": 2
@@ -3589,7 +3481,7 @@
       "m_Level": 8
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "unlockInfo",
       "m_MetaFlag": 0,
       "m_Level": 8
@@ -3631,7 +3523,7 @@
       "m_Level": 12
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "levelMods",
       "m_MetaFlag": 0,
       "m_Level": 5
@@ -3655,7 +3547,7 @@
       "m_Level": 7
     },
     {
-      "m_Type": "List\u00601",
+      "m_Type": "List`1",
       "m_Name": "levelMods",
       "m_MetaFlag": 0,
       "m_Level": 8
@@ -3695,180 +3587,6 @@
       "m_Name": "data",
       "m_MetaFlag": 0,
       "m_Level": 12
-    },
-    {
-      "m_Type": "bool",
-      "m_Name": "isCnLimited",
-      "m_MetaFlag": 16384,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "bool",
-      "m_Name": "hasDifferentMusic",
-      "m_MetaFlag": 16384,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "differentMusic",
-      "m_MetaFlag": 0,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "previewClipDifficulty",
-      "m_MetaFlag": 0,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "bool",
-      "m_Name": "hasDifferentCover",
-      "m_MetaFlag": 16384,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "differentCover",
-      "m_MetaFlag": 0,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "List\u00601",
-      "m_Name": "keyStore",
-      "m_MetaFlag": 0,
-      "m_Level": 1
-    },
-    {
-      "m_Type": "Array",
-      "m_Name": "Array",
-      "m_MetaFlag": 0,
-      "m_Level": 2
-    },
-    {
-      "m_Type": "int",
-      "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 3
-    },
-    {
-      "m_Type": "Key",
-      "m_Name": "data",
-      "m_MetaFlag": 0,
-      "m_Level": 3
-    },
-    {
-      "m_Type": "string",
-      "m_Name": "keyName",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "Array",
-      "m_Name": "Array",
-      "m_MetaFlag": 16384,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "int",
-      "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 6
-    },
-    {
-      "m_Type": "char",
-      "m_Name": "data",
-      "m_MetaFlag": 0,
-      "m_Level": 6
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "unlockedTimes",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "kindOfKey",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "unlockTimes",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "List\u00601",
-      "m_Name": "songAllCombos",
-      "m_MetaFlag": 0,
-      "m_Level": 1
-    },
-    {
-      "m_Type": "Array",
-      "m_Name": "Array",
-      "m_MetaFlag": 0,
-      "m_Level": 2
-    },
-    {
-      "m_Type": "int",
-      "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 3
-    },
-    {
-      "m_Type": "SongAllComboBase",
-      "m_Name": "data",
-      "m_MetaFlag": 0,
-      "m_Level": 3
-    },
-    {
-      "m_Type": "string",
-      "m_Name": "songsId",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "Array",
-      "m_Name": "Array",
-      "m_MetaFlag": 16384,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "int",
-      "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 6
-    },
-    {
-      "m_Type": "char",
-      "m_Name": "data",
-      "m_MetaFlag": 0,
-      "m_Level": 6
-    },
-    {
-      "m_Type": "Int32[]",
-      "m_Name": "allComboNum",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "Array",
-      "m_Name": "Array",
-      "m_MetaFlag": 0,
-      "m_Level": 5
-    },
-    {
-      "m_Type": "int",
-      "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 6
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "data",
-      "m_MetaFlag": 0,
-      "m_Level": 6
     }
   ]
 }

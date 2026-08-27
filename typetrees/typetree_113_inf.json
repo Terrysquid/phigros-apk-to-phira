@@ -2167,6 +2167,12 @@
       "m_Level": 5
     },
     {
+      "m_Type": "float",
+      "m_Name": "previewEndTime",
+      "m_MetaFlag": 0,
+      "m_Level": 5
+    },
+    {
       "m_Type": "ChartUnlock[]",
       "m_Name": "unlockInfo",
       "m_MetaFlag": 0,
@@ -2303,6 +2309,42 @@
       "m_Name": "data",
       "m_MetaFlag": 0,
       "m_Level": 12
+    },
+    {
+      "m_Type": "bool",
+      "m_Name": "isCnLimited",
+      "m_MetaFlag": 16384,
+      "m_Level": 5
+    },
+    {
+      "m_Type": "bool",
+      "m_Name": "hasDifferentMusic",
+      "m_MetaFlag": 16384,
+      "m_Level": 5
+    },
+    {
+      "m_Type": "SInt32",
+      "m_Name": "differentMusic",
+      "m_MetaFlag": 0,
+      "m_Level": 5
+    },
+    {
+      "m_Type": "SInt32",
+      "m_Name": "previewClipDifficulty",
+      "m_MetaFlag": 0,
+      "m_Level": 5
+    },
+    {
+      "m_Type": "bool",
+      "m_Name": "hasDifferentCover",
+      "m_MetaFlag": 16384,
+      "m_Level": 5
+    },
+    {
+      "m_Type": "SInt32",
+      "m_Name": "differentCover",
+      "m_MetaFlag": 0,
+      "m_Level": 5
     },
     {
       "m_Type": "List`1",
@@ -2587,6 +2629,12 @@
       "m_Level": 5
     },
     {
+      "m_Type": "float",
+      "m_Name": "previewEndTime",
+      "m_MetaFlag": 0,
+      "m_Level": 5
+    },
+    {
       "m_Type": "ChartUnlock[]",
       "m_Name": "unlockInfo",
       "m_MetaFlag": 0,
@@ -2723,6 +2771,42 @@
       "m_Name": "data",
       "m_MetaFlag": 0,
       "m_Level": 12
+    },
+    {
+      "m_Type": "bool",
+      "m_Name": "isCnLimited",
+      "m_MetaFlag": 16384,
+      "m_Level": 5
+    },
+    {
+      "m_Type": "bool",
+      "m_Name": "hasDifferentMusic",
+      "m_MetaFlag": 16384,
+      "m_Level": 5
+    },
+    {
+      "m_Type": "SInt32",
+      "m_Name": "differentMusic",
+      "m_MetaFlag": 0,
+      "m_Level": 5
+    },
+    {
+      "m_Type": "SInt32",
+      "m_Name": "previewClipDifficulty",
+      "m_MetaFlag": 0,
+      "m_Level": 5
+    },
+    {
+      "m_Type": "bool",
+      "m_Name": "hasDifferentCover",
+      "m_MetaFlag": 16384,
+      "m_Level": 5
+    },
+    {
+      "m_Type": "SInt32",
+      "m_Name": "differentCover",
+      "m_MetaFlag": 0,
+      "m_Level": 5
     },
     {
       "m_Type": "List`1",
@@ -3007,6 +3091,12 @@
       "m_Level": 5
     },
     {
+      "m_Type": "float",
+      "m_Name": "previewEndTime",
+      "m_MetaFlag": 0,
+      "m_Level": 5
+    },
+    {
       "m_Type": "ChartUnlock[]",
       "m_Name": "unlockInfo",
       "m_MetaFlag": 0,
@@ -3143,6 +3233,42 @@
       "m_Name": "data",
       "m_MetaFlag": 0,
       "m_Level": 12
+    },
+    {
+      "m_Type": "bool",
+      "m_Name": "isCnLimited",
+      "m_MetaFlag": 16384,
+      "m_Level": 5
+    },
+    {
+      "m_Type": "bool",
+      "m_Name": "hasDifferentMusic",
+      "m_MetaFlag": 16384,
+      "m_Level": 5
+    },
+    {
+      "m_Type": "SInt32",
+      "m_Name": "differentMusic",
+      "m_MetaFlag": 0,
+      "m_Level": 5
+    },
+    {
+      "m_Type": "SInt32",
+      "m_Name": "previewClipDifficulty",
+      "m_MetaFlag": 0,
+      "m_Level": 5
+    },
+    {
+      "m_Type": "bool",
+      "m_Name": "hasDifferentCover",
+      "m_MetaFlag": 16384,
+      "m_Level": 5
+    },
+    {
+      "m_Type": "SInt32",
+      "m_Name": "differentCover",
+      "m_MetaFlag": 0,
+      "m_Level": 5
     },
     {
       "m_Type": "List`1",
@@ -3427,6 +3553,12 @@
       "m_Level": 5
     },
     {
+      "m_Type": "float",
+      "m_Name": "previewEndTime",
+      "m_MetaFlag": 0,
+      "m_Level": 5
+    },
+    {
       "m_Type": "ChartUnlock[]",
       "m_Name": "unlockInfo",
       "m_MetaFlag": 0,
@@ -3565,142 +3697,40 @@
       "m_Level": 12
     },
     {
-      "m_Type": "List`1",
-      "m_Name": "keyStore",
-      "m_MetaFlag": 0,
-      "m_Level": 1
-    },
-    {
-      "m_Type": "Array",
-      "m_Name": "Array",
-      "m_MetaFlag": 0,
-      "m_Level": 2
-    },
-    {
-      "m_Type": "int",
-      "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 3
-    },
-    {
-      "m_Type": "Key",
-      "m_Name": "data",
-      "m_MetaFlag": 0,
-      "m_Level": 3
-    },
-    {
-      "m_Type": "string",
-      "m_Name": "keyName",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "Array",
-      "m_Name": "Array",
+      "m_Type": "bool",
+      "m_Name": "isCnLimited",
       "m_MetaFlag": 16384,
       "m_Level": 5
     },
     {
-      "m_Type": "int",
-      "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 6
-    },
-    {
-      "m_Type": "char",
-      "m_Name": "data",
-      "m_MetaFlag": 0,
-      "m_Level": 6
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "unlockedTimes",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "kindOfKey",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "SInt32",
-      "m_Name": "unlockTimes",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "List`1",
-      "m_Name": "songAllCombos",
-      "m_MetaFlag": 0,
-      "m_Level": 1
-    },
-    {
-      "m_Type": "Array",
-      "m_Name": "Array",
-      "m_MetaFlag": 0,
-      "m_Level": 2
-    },
-    {
-      "m_Type": "int",
-      "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 3
-    },
-    {
-      "m_Type": "SongAllComboBase",
-      "m_Name": "data",
-      "m_MetaFlag": 0,
-      "m_Level": 3
-    },
-    {
-      "m_Type": "string",
-      "m_Name": "songsId",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "Array",
-      "m_Name": "Array",
+      "m_Type": "bool",
+      "m_Name": "hasDifferentMusic",
       "m_MetaFlag": 16384,
       "m_Level": 5
     },
     {
-      "m_Type": "int",
-      "m_Name": "size",
-      "m_MetaFlag": 0,
-      "m_Level": 6
-    },
-    {
-      "m_Type": "char",
-      "m_Name": "data",
-      "m_MetaFlag": 0,
-      "m_Level": 6
-    },
-    {
-      "m_Type": "Int32[]",
-      "m_Name": "allComboNum",
-      "m_MetaFlag": 0,
-      "m_Level": 4
-    },
-    {
-      "m_Type": "Array",
-      "m_Name": "Array",
+      "m_Type": "SInt32",
+      "m_Name": "differentMusic",
       "m_MetaFlag": 0,
       "m_Level": 5
     },
     {
-      "m_Type": "int",
-      "m_Name": "size",
+      "m_Type": "SInt32",
+      "m_Name": "previewClipDifficulty",
       "m_MetaFlag": 0,
-      "m_Level": 6
+      "m_Level": 5
+    },
+    {
+      "m_Type": "bool",
+      "m_Name": "hasDifferentCover",
+      "m_MetaFlag": 16384,
+      "m_Level": 5
     },
     {
       "m_Type": "SInt32",
-      "m_Name": "data",
+      "m_Name": "differentCover",
       "m_MetaFlag": 0,
-      "m_Level": 6
+      "m_Level": 5
     }
   ]
 }

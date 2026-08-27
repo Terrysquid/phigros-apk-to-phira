@@ -240,10 +240,6 @@ def load_assets(apk_path, check_changes=False):
         data_key = base64.b64decode(j["m_KeyDataString"])
         data_bucket = base64.b64decode(j["m_BucketDataString"])
         data_entry = base64.b64decode(j["m_EntryDataString"])
-        with open("typetree.json") as f: # extracted using Il2CppDumper and TypeTreeGenerator, from libil2cpp.so and global-metadata.dat
-            typetree = json.load(f)
-        with open("typetree_legacy.json", encoding="utf-8") as f:
-            typetree_legacy = json.load(f)
         print("Info: Input files found")
 
         game_information = None
@@ -255,11 +251,19 @@ def load_assets(apk_path, check_changes=False):
                 if obj.type.name != "MonoBehaviour": continue
                 data = obj.read(check_read=False)
                 if data.m_Script.read().m_Name == "GameInformation":
-                    try:
-                        game_information = obj.read_typetree(typetree["GameInformation"])
-                    except (ValueError, EOFError):
-                        print("Info: Typetree failed, trying legacy typetree")
-                        game_information = obj.read_typetree(typetree_legacy["GameInformation"], check_read=False)
+                    typetree_version = lambda path: int(re.fullmatch(r"typetree_(\d+).*\.json", path.name)[1])
+                    for typetree_path in sorted(Path("typetrees").glob("typetree_*.json"), key=typetree_version, reverse=True): # extracted using Il2CppDumper and TypeTreeGenerator, from libil2cpp.so and global-metadata.dat
+                        with open(typetree_path, encoding="utf-8") as f:
+                            typetree = json.load(f)
+                        try:
+                            game_information = obj.read_typetree(typetree["GameInformation"], check_read=False)
+                        except (ValueError, EOFError):
+                            print(f"Info: Typetree {typetree_path.name} failed, trying older typetrees")
+                            continue
+                        print(f"Info: Typetree {typetree_path.name} succeeded")
+                        break
+                    else:
+                        raise ValueError("All typetrees failed")
                     break
             if game_information != None: break
         assert game_information != None, "GameInformation not found"
