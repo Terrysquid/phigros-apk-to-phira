@@ -234,8 +234,6 @@ def load_assets(apk_path, check_changes=False):
     with GameZip(apk_path) as zf:
         with zf.open("assets/aa/catalog.json") as f:
             j = json.load(f)
-        with zf.open("assets/bin/Data/level0") as f:
-            env = UnityPy.load(f.read())
         with zf.open("assets/bin/Data/globalgamemanagers.assets") as src:
             with open("globalgamemanagers.assets","wb") as dst:
                 dst.write(src.read()) # Important: PPtr.py in UnityPy will use this for data.m_Script.read()
@@ -249,16 +247,21 @@ def load_assets(apk_path, check_changes=False):
         print("Info: Input files found")
 
         game_information = None
-        for obj in env.objects:
-            if obj.type.name != "MonoBehaviour": continue
-            data = obj.read(check_read=False)
-            if data.m_Script.read().m_Name == "GameInformation":
-                try:
-                    game_information = obj.read_typetree(typetree["GameInformation"])
-                except (ValueError, EOFError):
-                    print("Info: Typetree failed, trying legacy typetree")
-                    game_information = obj.read_typetree(typetree_legacy["GameInformation"])
-                break
+        level_paths = sorted([path for path in zf.files if re.fullmatch(r"assets/bin/Data/level\d+", path)], key=lambda x: int(x[21:]))
+        for level_path in level_paths:
+            with zf.open(level_path) as f:
+                env = UnityPy.load(f.read())
+            for obj in env.objects:
+                if obj.type.name != "MonoBehaviour": continue
+                data = obj.read(check_read=False)
+                if data.m_Script.read().m_Name == "GameInformation":
+                    try:
+                        game_information = obj.read_typetree(typetree["GameInformation"])
+                    except (ValueError, EOFError):
+                        print("Info: Typetree failed, trying legacy typetree")
+                        game_information = obj.read_typetree(typetree_legacy["GameInformation"])
+                    break
+            if game_information != None: break
         assert game_information != None, "GameInformation not found"
         for k,v in game_information["song"].items():
             for i in v:
