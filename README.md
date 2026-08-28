@@ -51,6 +51,13 @@ Extract files from Phigros APK/XAPK and create zips for Phira.
    - 画师
    - 预览时间
 
+## 适用版本
+
+- 版本号 113 (3.9.1) 及以上：导出全部内容
+- 版本号 77 (2.5.1) 至 112：导出全部内容（使用旧版 typetree）
+- 版本号 41 (1.6.4) 至 76：导出部分内容（曲目 ID、谱面文件、音频文件、曲绘文件）
+- 版本号 41 以下：暂不支持
+
 ## 其它
 
 - APK的路径会自动保存到`config.json`中
