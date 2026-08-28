@@ -247,9 +247,6 @@ def load_assets(apk_path, check_changes=False):
     with GameZip(apk_path) as zf:
         with zf.open("assets/aa/catalog.json") as f:
             j = json.load(f)
-        with zf.open("assets/bin/Data/globalgamemanagers.assets") as src:
-            with open("globalgamemanagers.assets","wb") as dst:
-                dst.write(src.read()) # Important: PPtr.py in UnityPy will use this for data.m_Script.read()
         data_key = base64.b64decode(j["m_KeyDataString"])
         data_bucket = base64.b64decode(j["m_BucketDataString"])
         data_entry = base64.b64decode(j["m_EntryDataString"])
@@ -257,68 +254,74 @@ def load_assets(apk_path, check_changes=False):
 
         game_information = None
         level_paths = sorted([path for path in zf.files if re.fullmatch(r"assets/bin/Data/level\d+", path)], key=lambda x: int(x[21:]))
-        for level_path in level_paths:
-            with zf.open(level_path) as f:
-                env = UnityPy.load(f.read())
-            for obj in env.objects:
-                if obj.type.name != "MonoBehaviour": continue
-                data = obj.read(check_read=False)
-                if data.m_Script.read().m_Name == "GameInformation":
-                    get_typetree_version_code = lambda path: int(re.fullmatch(r"typetree_(\d+).*\.json", path.name)[1])
-                    version_code = get_version_code(apk_path)
-                    if version_code != None: print(f"Info: Got version code {version_code}")
-                    for typetree_path in sorted(Path("typetrees").glob("typetree_*.json"), key=get_typetree_version_code, reverse=True): # extracted using Il2CppDumper and TypeTreeGenerator, from libil2cpp.so and global-metadata.dat
-                        typetree_version_code = get_typetree_version_code(typetree_path)
-                        if version_code != None and version_code < typetree_version_code:
-                            print(f"Info: Skipped typetree {typetree_path.name} for incompatible version code")
-                            continue
-                        with open(typetree_path, encoding="utf-8") as f:
-                            typetree = json.load(f)
-                        try:
-                            game_information = obj.read_typetree(typetree["GameInformation"], check_read=False)
-                        except (ValueError, EOFError):
-                            print(f"Info: Typetree {typetree_path.name} failed, trying older typetrees")
-                            continue
-                        print(f"Info: Typetree {typetree_path.name} succeeded")
+        if "assets/bin/Data/globalgamemanagers.assets" in zf.files: # has game managers
+            with zf.open("assets/bin/Data/globalgamemanagers.assets") as src:
+                with open("globalgamemanagers.assets","wb") as dst:
+                    dst.write(src.read()) # Important: PPtr.py in UnityPy will use this for data.m_Script.read()
+            for level_path in level_paths:
+                with zf.open(level_path) as f:
+                    env = UnityPy.load(f.read())
+                for obj in env.objects:
+                    if obj.type.name != "MonoBehaviour": continue
+                    data = obj.read(check_read=False)
+                    if data.m_Script.read().m_Name == "GameInformation":
+                        get_typetree_version_code = lambda path: int(re.fullmatch(r"typetree_(\d+).*\.json", path.name)[1])
+                        version_code = get_version_code(apk_path)
+                        if version_code != None: print(f"Info: Got version code {version_code}")
+                        for typetree_path in sorted(Path("typetrees").glob("typetree_*.json"), key=get_typetree_version_code, reverse=True): # extracted using Il2CppDumper and TypeTreeGenerator, from libil2cpp.so and global-metadata.dat
+                            typetree_version_code = get_typetree_version_code(typetree_path)
+                            if version_code != None and version_code < typetree_version_code:
+                                print(f"Info: Skipped typetree {typetree_path.name} for incompatible version code")
+                                continue
+                            with open(typetree_path, encoding="utf-8") as f:
+                                typetree = json.load(f)
+                            try:
+                                game_information = obj.read_typetree(typetree["GameInformation"], check_read=False)
+                            except (ValueError, EOFError):
+                                print(f"Info: Typetree {typetree_path.name} failed, trying older typetrees")
+                                continue
+                            print(f"Info: Typetree {typetree_path.name} succeeded")
+                            break
+                        else:
+                            raise ValueError("All typetrees failed")
                         break
-                    else:
-                        raise ValueError("All typetrees failed")
-                    break
-            if game_information != None: break
-        assert game_information != None, "GameInformation not found"
-        for k,v in game_information["song"].items():
-            for i in v:
-                song_id = i["songsId"]
-                if check_changes and song_id not in song_ids:
-                    print(f"Info: New song ID found (GameInformation): {song_id}")
-                    song_ids.add(song_id)
-                    new_song_ids.add(song_id)
-                song = songs.setdefault(song_id, Song())
-                song.key = i["songsKey"]
-                song.name = i["songsName"]
-                song.difficulty = [round(j,1) for j in i["difficulty"]]
-                song.illustrator = i["illustrator"]
-                song.charter = i["charter"]
-                song.composer = i["composer"]
-                song.levels = i["levels"]
-                song.preview_time = i["previewTime"]
-                song.preview_end_time = i.get("previewEndTime", "") # legacy versions missing previewEndTime
-                assert len(song.difficulty) == len(song.charter) == len(song.levels), f"List length inconsistency with {len(song.difficulty)} {len(song.charter)} {len(song.levels)}"
-                if check_changes:
-                    old = difficulties.get(song_id)
-                    new = {level: song.difficulty[j] for j,level in enumerate(song.levels)}
-                    if old != None:
-                        for level,n in new.items():
-                            o = old.get(level)
-                            if o != n:
-                                if o == None or o == 0:
-                                    print(f"Info: New level for {song_id}: {level} ({n:.1f})")
-                                else:
-                                    print(f"Info: Difficulty changed for {song_id} {level}: {o:.1f} -> {n:.1f}")
-                    difficulties[song_id] = new
-                song.music = [""] * len(song.levels)
-                song.charts = [""] * len(song.levels)
-        print(f"Info: {len(songs)} songs found in GameInformation")
+                if game_information != None: break
+            assert game_information != None, "GameInformation not found"
+            for k,v in game_information["song"].items():
+                for i in v:
+                    song_id = i["songsId"]
+                    if check_changes and song_id not in song_ids:
+                        print(f"Info: New song ID found (GameInformation): {song_id}")
+                        song_ids.add(song_id)
+                        new_song_ids.add(song_id)
+                    song = songs.setdefault(song_id, Song())
+                    song.key = i["songsKey"]
+                    song.name = i["songsName"]
+                    song.difficulty = [round(j,1) for j in i["difficulty"]]
+                    song.illustrator = i["illustrator"]
+                    song.charter = i["charter"]
+                    song.composer = i["composer"]
+                    song.levels = i["levels"]
+                    song.preview_time = i["previewTime"]
+                    song.preview_end_time = i.get("previewEndTime", "") # legacy versions missing previewEndTime
+                    assert len(song.difficulty) == len(song.charter) == len(song.levels), f"List length inconsistency with {len(song.difficulty)} {len(song.charter)} {len(song.levels)}"
+                    if check_changes:
+                        old = difficulties.get(song_id)
+                        new = {level: song.difficulty[j] for j,level in enumerate(song.levels)}
+                        if old != None:
+                            for level,n in new.items():
+                                o = old.get(level)
+                                if o != n:
+                                    if o == None or o == 0:
+                                        print(f"Info: New level for {song_id}: {level} ({n:.1f})")
+                                    else:
+                                        print(f"Info: Difficulty changed for {song_id} {level}: {o:.1f} -> {n:.1f}")
+                        difficulties[song_id] = new
+                    song.music = [""] * len(song.levels)
+                    song.charts = [""] * len(song.levels)
+            print(f"Info: {len(songs)} songs found in GameInformation")
+        else:
+            print(f"Info: Using assets-only mode due to missing globalgamemanagers.assets")
 
         output = []
         p_bucket = 0x0 # pointer
