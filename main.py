@@ -384,6 +384,7 @@ def load_assets(apk_path, check_changes=False):
                     add_level(song, level)
                     song.music[song.levels.index(level)] = path
             elif suffix == ".json":
+                if file_name == "Chart.json": file_name = "Chart_SP.json"
                 assert file_name[:6] == "Chart_", f"Unknown chart file {file_name}"
                 level = file_name[6:-5] # Chart_IN.json -> IN
                 add_level(song, level)
