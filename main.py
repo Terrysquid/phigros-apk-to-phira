@@ -373,6 +373,7 @@ def load_assets(apk_path, check_changes=False):
             song = get_song(song_id)
             path = "assets/aa/Android/" + value
             suffix = Path(file_name).suffix.lower()
+            stem = Path(file_name).stem.lower()
             assert suffix in [".wav",".json",".jpg",".png"], f"Unknown suffix {suffix}"
 
             if suffix == ".wav":
@@ -401,10 +402,10 @@ def load_assets(apk_path, check_changes=False):
                         new_charts.add((song_id, level))
                     asset_hashes[key] = new_hash
             elif suffix in [".jpg",".png"]:
-                assert file_name in ["Illustration.jpg","IllustrationLowRes.jpg","IllustrationBlur.jpg","Illustration.png","IllustrationLowRes.png","IllustrationBlur.png"], f"Unknown illustration file {file_name}"
-                if file_name in ["Illustration.jpg","Illustration.png"]: song.illustration = path
-                elif file_name in ["IllustrationLowRes.jpg","IllustrationLowRes.png"]: song.illustration_lowres = path
-                elif file_name in ["IllustrationBlur.jpg","IllustrationBlur.png"]: song.illustration_blur = path
+                assert stem in ["illustration","illustrationlowres","illustrationblur"], f"Unknown illustration file {file_name}"
+                if stem == "illustration": song.illustration = path
+                elif stem == "illustrationlowres": song.illustration_lowres = path
+                elif stem == "illustrationblur": song.illustration_blur = path
             root.after(0, lambda cnt=count: progress_bar.config(value=cnt))
             root.after(0, lambda cnt=count: set_info(f"{'正在检查并加载' if check_changes else '正在加载'}: {cnt}/{len(output)}"))
     if check_changes:
