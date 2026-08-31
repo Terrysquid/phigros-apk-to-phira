@@ -29,6 +29,7 @@ if os.path.exists(song_ids_path):
         song_ids = set(json.load(f))
 new_song_ids = set()
 new_charts = set()
+assets_only = False
 asset_hashes = {}
 if os.path.exists(asset_hashes_path):
     with open(asset_hashes_path, "r", encoding="utf-8") as f:
@@ -241,6 +242,8 @@ def get_content(data, suffix):
         return buf.getvalue()
 
 def load_assets(apk_path, check_changes=False):
+    global assets_only
+    assets_only = False
     if check_changes:
         new_song_ids.clear()
         new_charts.clear()
@@ -322,6 +325,7 @@ def load_assets(apk_path, check_changes=False):
             print(f"Info: {len(songs)} songs found in GameInformation")
         else:
             print(f"Info: Using assets-only mode due to missing globalgamemanagers.assets")
+            assets_only = True
 
         output = []
         p_bucket = 0x0 # pointer
@@ -446,7 +450,7 @@ def search():
         for index in range(len(song.levels)):
             level = song.levels[index]
             difficulty = song.difficulty[index]
-            is_other = level not in ["EZ", "HD", "IN", "AT"] or difficulty == 0
+            is_other = level not in ["EZ", "HD", "IN", "AT"] or (not assets_only and difficulty == 0)
             if output_levels and not (level in output_levels or (is_other and "Other" in output_levels)): continue
             if not (output_difficulty_min <= difficulty <= output_difficulty_max): continue
             if (new_song_var.get() or new_chart_var.get()) and not ((new_song_var.get() and song_id in new_song_ids) or (new_chart_var.get() and (song_id, level) in new_charts)): continue
