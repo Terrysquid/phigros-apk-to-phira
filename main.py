@@ -253,6 +253,7 @@ def load_assets(apk_path, check_changes=False):
         data_key = base64.b64decode(j["m_KeyDataString"])
         data_bucket = base64.b64decode(j["m_BucketDataString"])
         data_entry = base64.b64decode(j["m_EntryDataString"])
+        internal_ids = j["m_InternalIds"]
         print("Info: Input files found")
 
         game_information = None
@@ -280,7 +281,9 @@ def load_assets(apk_path, check_changes=False):
                                 typetree = json.load(f)
                             try:
                                 game_information = obj.read_typetree(typetree["GameInformation"], check_read=False)
-                            except (ValueError, EOFError):
+                                # verify that at least one song exists, and there is one difficulty & charter per level
+                                assert any(game_information["song"].values()) and all(len(i["difficulty"]) == len(i["charter"]) == len(i["levels"]) for v in game_information["song"].values() for i in v)
+                            except (ValueError, EOFError, KeyError, TypeError, AssertionError):
                                 print(f"Info: Typetree {typetree_path.name} failed, trying older typetrees")
                                 continue
                             print(f"Info: Typetree {typetree_path.name} succeeded")
@@ -346,13 +349,15 @@ def load_assets(apk_path, check_changes=False):
                 p_entry = 4 + 28 * p_entry + 8
                 if ii == 0: entry = i32(data_entry, p_entry)[0]
                 if ii > 0: assert entry == i32(data_entry, p_entry)[0], "Different entries referred error"
-            output.append((key,entry))
+            output.append((key, entry))
         for i, j in enumerate(output):
             key, entry = j
-            if entry == -1: # a key
-                pass
             if entry != -1: # a value
-                output[i] = (key, output[entry][0])
+                value = output[entry][0]
+                if isinstance(value, str) and value.endswith(".bundle"):
+                    if len(value) != 32 + 7:
+                        value = internal_ids[entry].rsplit("/", 1)[-1]
+                    output[i] = (key, value)
 
         # remove keys with non-bundle values
         output = [i for i in output if isinstance(i[1], str) and i[1].endswith(".bundle")]
@@ -378,6 +383,7 @@ def load_assets(apk_path, check_changes=False):
             path = "assets/aa/Android/" + value
             suffix = Path(file_name).suffix.lower()
             stem = Path(file_name).stem.lower()
+            if suffix == ".c9locked": continue
             assert suffix in [".wav",".json",".jpg",".png"], f"Unknown suffix {suffix}"
 
             if suffix == ".wav":
