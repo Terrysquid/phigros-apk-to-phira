@@ -296,10 +296,6 @@ def load_assets(apk_path, check_changes=False):
             for k,v in game_information["song"].items():
                 for i in v:
                     song_id = i["songsId"]
-                    if check_changes and song_id not in song_ids:
-                        print(f"Info: New song ID found (GameInformation): {song_id}")
-                        song_ids.add(song_id)
-                        new_song_ids.add(song_id)
                     song = songs.setdefault(song_id, Song())
                     song.key = i["songsKey"]
                     song.name = i["songsName"]
@@ -308,6 +304,11 @@ def load_assets(apk_path, check_changes=False):
                     song.charter = i["charter"]
                     song.composer = i["composer"]
                     song.levels = i["levels"]
+                    if check_changes and song_id not in song_ids:
+                        last_index = next(j for j in range(len(song.difficulty) - 1, -1, -1) if song.difficulty[j] != 0)
+                        print(f"Info: New song ID found (GameInformation): [{song.levels[last_index]} {song.difficulty[last_index]:.1f}] {song_id}")
+                        song_ids.add(song_id)
+                        new_song_ids.add(song_id)
                     song.preview_time = i["previewTime"]
                     song.preview_end_time = i.get("previewEndTime", "") # legacy versions missing previewEndTime
                     assert len(song.difficulty) == len(song.charter) == len(song.levels), f"List length inconsistency with {len(song.difficulty)} {len(song.charter)} {len(song.levels)}"
