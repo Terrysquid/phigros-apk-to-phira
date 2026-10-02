@@ -264,11 +264,14 @@ def load_assets(apk_path, check_changes=False):
         print("Info: Input files found")
 
         game_information = None
-        level_paths = sorted([path for path in zf.files if re.fullmatch(r"assets/bin/Data/level\d+", path)], key=lambda x: int(x[21:]))
-        if "assets/bin/Data/globalgamemanagers.assets" in zf.files: # has game managers
-            with zf.open("assets/bin/Data/globalgamemanagers.assets") as src:
-                with open("globalgamemanagers.assets","wb") as dst:
-                    dst.write(src.read()) # Important: PPtr.py in UnityPy will use this for data.m_Script.read()
+        if "assets/bin/Data/globalgamemanagers.assets" in zf.files or "assets/bin/Data/data.unity3d" in zf.files:
+            if "assets/bin/Data/globalgamemanagers.assets" in zf.files: # has game managers
+                with zf.open("assets/bin/Data/globalgamemanagers.assets") as src:
+                    with open("globalgamemanagers.assets","wb") as dst:
+                        dst.write(src.read()) # Important: PPtr.py in UnityPy will use this for data.m_Script.read()
+                level_paths = sorted([path for path in zf.files if re.fullmatch(r"assets/bin/Data/level\d+", path)], key=lambda x: int(x[21:]))
+            else:
+                level_paths = ["assets/bin/Data/data.unity3d"]
             for level_path in level_paths:
                 with zf.open(level_path) as f:
                     env = UnityPy.load(f.read())
@@ -338,7 +341,7 @@ def load_assets(apk_path, check_changes=False):
                         difficulties[song_id] = new
             print(f"Info: {len(songs)} songs found in GameInformation")
         else:
-            print(f"Info: Using assets-only mode due to missing globalgamemanagers.assets")
+            print(f"Info: Using assets-only mode due to missing GameInformation")
             assets_only = True
 
         output = []
