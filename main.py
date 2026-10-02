@@ -401,14 +401,15 @@ def load_assets(apk_path, check_changes=False):
                 if file_name == "music.wav":
                     song.default_music = path
                 else:
-                    assert file_name[:6] == "music_", f"Unknown music file {file_name}"
-                    level = file_name[6:-4] # music_IN.wav -> IN (for Cristalisia)
+                    match = re.fullmatch(r"music_(.+)\.wav", file_name)
+                    assert match, f"Unknown music file {file_name}"
+                    level = match[1] # music_IN.wav -> IN (for Cristalisia)
                     add_level(song, level)
                     song.music[song.levels.index(level)] = path
             elif suffix == ".json":
-                if file_name == "Chart.json": file_name = "Chart_SP.json"
-                assert file_name[:6] == "Chart_", f"Unknown chart file {file_name}"
-                level = file_name[6:-5] # Chart_IN.json -> IN
+                match = re.fullmatch(r"Chart(?:_(.+))?\.json", file_name)
+                assert match, f"Unknown chart file {file_name}"
+                level = match[1] or "SP" # Chart_IN.json -> IN
                 add_level(song, level)
                 song.charts[song.levels.index(level)] = path
                 if check_changes:
@@ -427,9 +428,9 @@ def load_assets(apk_path, check_changes=False):
                 elif stem.lower() == "illustrationlowres": song.default_illustration_lowres = path
                 elif stem.lower() == "illustrationblur": song.default_illustration_blur = path
                 else:
-                    match = re.fullmatch(r"(illustration(?:lowres|blur)?)(?:_(.+))?", stem, re.I) # IllustrationBlur_AT -> AT
+                    match = re.fullmatch(r"(illustration(?:lowres|blur)?)(?:_(.+))?", stem, re.I)
                     assert match, f"Unknown illustration file {file_name}"
-                    illustration_type, level = match.groups()
+                    illustration_type, level = match.groups() # Illustration_IN -> IN
                     add_level(song, level)
                     if illustration_type.lower() == "illustration": song.illustration[song.levels.index(level)] = path
                     elif illustration_type.lower() == "illustrationlowres": song.illustration_lowres[song.levels.index(level)] = path
