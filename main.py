@@ -114,9 +114,12 @@ class Song:
         self.composer = ""
         self.preview_time = 0.0
         self.preview_end_time = 0.0
-        self.illustration = ""
-        self.illustration_lowres = ""
-        self.illustration_blur = ""
+        self.default_illustration = ""
+        self.default_illustration_lowres = ""
+        self.default_illustration_blur = ""
+        self.illustration = []
+        self.illustration_lowres = []
+        self.illustration_blur = []
         self.illustrator = ""
         self.levels = []
         self.difficulty = []
@@ -206,9 +209,10 @@ def clone_song(src, song_id):
     song.name = song_id.split(".")[0]
     if src:
         song.name = src.name
-        song.illustration = src.illustration
-        song.illustration_lowres = src.illustration_lowres
-        song.illustration_blur = src.illustration_blur
+        song.default_music = src.default_music
+        song.default_illustration = src.default_illustration
+        song.default_illustration_lowres = src.default_illustration_lowres
+        song.default_illustration_blur = src.default_illustration_blur
         song.illustrator = src.illustrator
     songs[song_id] = song
     return song
@@ -218,8 +222,11 @@ def add_level(song, level):
         song.levels.append(level)
         song.difficulty.append(0.0)
         song.charter.append("")
-        song.music.append(song.default_music)
+        song.music.append("")
         song.charts.append("")
+        song.illustration.append("")
+        song.illustration_lowres.append("")
+        song.illustration_blur.append("")
 
 def get_data(zf, path, description):
     assert path != "", f"Missing {description}"
@@ -304,6 +311,11 @@ def load_assets(apk_path, check_changes=False):
                     song.charter = i["charter"]
                     song.composer = i["composer"]
                     song.levels = i["levels"]
+                    song.music = [""] * len(song.levels)
+                    song.charts = [""] * len(song.levels)
+                    song.illustration = [""] * len(song.levels)
+                    song.illustration_lowres = [""] * len(song.levels)
+                    song.illustration_blur = [""] * len(song.levels)
                     if check_changes and song_id not in song_ids:
                         last_index = next(j for j in range(len(song.difficulty) - 1, -1, -1) if song.difficulty[j] != 0)
                         print(f"Info: New song ID found (GameInformation): [{song.levels[last_index]} {song.difficulty[last_index]:.1f}] {song_id}")
@@ -324,8 +336,6 @@ def load_assets(apk_path, check_changes=False):
                                     else:
                                         print(f"Info: Difficulty changed for {song_id} {level}: {o:.1f} -> {n:.1f}")
                         difficulties[song_id] = new
-                    song.music = [""] * len(song.levels)
-                    song.charts = [""] * len(song.levels)
             print(f"Info: {len(songs)} songs found in GameInformation")
         else:
             print(f"Info: Using assets-only mode due to missing globalgamemanagers.assets")
@@ -382,9 +392,9 @@ def load_assets(apk_path, check_changes=False):
                 new_song_ids.add(song_id)
             song = get_song(song_id)
             path = "assets/aa/Android/" + value
-            suffix = Path(file_name).suffix.lower()
-            stem = Path(file_name).stem.lower()
-            if suffix == ".c9locked": continue
+            suffix = Path(file_name).suffix
+            stem = Path(file_name).stem
+            if suffix == ".c9Locked": continue
             assert suffix in [".wav",".json",".jpg",".png"], f"Unknown suffix {suffix}"
 
             if suffix == ".wav":
@@ -413,10 +423,17 @@ def load_assets(apk_path, check_changes=False):
                         new_charts.add((song_id, level))
                     asset_hashes[key] = new_hash
             elif suffix in [".jpg",".png"]:
-                assert stem in ["illustration","illustrationlowres","illustrationblur"], f"Unknown illustration file {file_name}"
-                if stem == "illustration": song.illustration = path
-                elif stem == "illustrationlowres": song.illustration_lowres = path
-                elif stem == "illustrationblur": song.illustration_blur = path
+                if stem.lower() == "illustration": song.default_illustration = path
+                elif stem.lower() == "illustrationlowres": song.default_illustration_lowres = path
+                elif stem.lower() == "illustrationblur": song.default_illustration_blur = path
+                else:
+                    match = re.fullmatch(r"(illustration(?:lowres|blur)?)(?:_(.+))?", stem, re.I) # IllustrationBlur_AT -> AT
+                    assert match, f"Unknown illustration file {file_name}"
+                    illustration_type, level = match.groups()
+                    add_level(song, level)
+                    if illustration_type.lower() == "illustration": song.illustration[song.levels.index(level)] = path
+                    elif illustration_type.lower() == "illustrationlowres": song.illustration_lowres[song.levels.index(level)] = path
+                    elif illustration_type.lower() == "illustrationblur": song.illustration_blur[song.levels.index(level)] = path
             root.after(0, lambda cnt=count: progress_bar.config(value=cnt))
             root.after(0, lambda cnt=count: set_info(f"{'正在检查并加载' if check_changes else '正在加载'}: {cnt}/{len(output)}"))
     if check_changes:
@@ -641,12 +658,12 @@ def export():
                     output_music = get_content(data, ".wav")
                     data = get_data(zf, song.charts[index], f"chart for song {song.name} {song.levels[index]}")
                     output_chart = get_content(data, ".json")
-                    data = get_data(zf, song.illustration, f"illustration for song {song.name}")
+                    data = get_data(zf, song.illustration[index] or song.default_illustration, f"illustration for song {song.name}")
                     output_illustration = get_content(data, ".jpg")
                     if config["extra_illustration"]:
-                        data = get_data(zf, song.illustration_lowres, f"illustrationLowRes for song {song.name}")
+                        data = get_data(zf, song.illustration_lowres[index] or song.default_illustration_lowres, f"illustrationLowRes for song {song.name}")
                         output_illustration_lowres = get_content(data, ".jpg")
-                        data = get_data(zf, song.illustration_blur, f"illustrationBlur for song {song.name}")
+                        data = get_data(zf, song.illustration_blur[index] or song.default_illustration_blur, f"illustrationBlur for song {song.name}")
                         output_illustration_blur = get_content(data, ".jpg")
                     with ZipFile(f"output/[{song.levels[index]} {song.difficulty[index]:.1f}] {sanitize_windows(song.name)} ({song_id}).zip", "w", compression=ZIP_DEFLATED) as output_zf:
                         output_zf.writestr("music.wav", output_music)
