@@ -245,7 +245,7 @@ def get_content(data, suffix):
         return data.m_Script.encode()
     if suffix in [".jpg",".png"]:
         buf = io.BytesIO()
-        data.image.save(buf, "JPEG")
+        data.image.convert("RGB").save(buf, "JPEG")
         return buf.getvalue()
 
 def load_assets(apk_path, check_changes=False):
