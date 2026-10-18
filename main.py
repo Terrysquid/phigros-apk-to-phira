@@ -259,12 +259,13 @@ def convert_audio(content, audio_format):
         import soundfile
     except ImportError as e:
         raise ImportError("OGG/MP3 export requires soundfile") from e
-    samples, sample_rate = soundfile.read(io.BytesIO(content), dtype="float32", always_2d=True)
     buf = io.BytesIO()
-    if audio_format == "OGG":
-        soundfile.write(buf, samples, sample_rate, format="OGG", subtype="VORBIS")
-    else:
-        soundfile.write(buf, samples, sample_rate, format="MP3")
+    with soundfile.SoundFile(io.BytesIO(content)) as source:
+        subtype = "VORBIS" if audio_format == "OGG" else None
+        with soundfile.SoundFile(buf, "w", samplerate=source.samplerate, channels=source.channels, format=audio_format, subtype=subtype) as output:
+            # large single writes can overflow the native Vorbis encoder's stack
+            for block in source.blocks(blocksize=8192, dtype="float32", always_2d=True):
+                output.write(block)
     return buf.getvalue()
 
 def load_assets(apk_path, check_changes=False):
