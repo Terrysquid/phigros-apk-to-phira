@@ -767,7 +767,7 @@ def settings():
     extra_illustration_check.grid(row=1, column=0, sticky="w")
     audio_frame = ttk.Frame(settings_frame)
     audio_frame.grid(row=2, column=0, sticky="w")
-    ttk.Label(audio_frame, text="音频格式: ").grid(row=0, column=0, sticky="w")
+    ttk.Label(audio_frame, text="导出音频格式: ").grid(row=0, column=0, sticky="w")
     audio_format_var = tk.StringVar(value=config["audio_format"])
     audio_format_combo = ttk.Combobox(audio_frame, textvariable=audio_format_var, values=["WAV", "OGG", "MP3"], state="readonly", width=6)
     audio_format_combo.grid(row=0, column=1, sticky="w")
