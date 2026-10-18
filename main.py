@@ -7,7 +7,7 @@ os.chdir(Path(__file__).resolve().parent)
 import urllib.parse
 import urllib.request
 import tkinter as tk
-from tkinter import ttk, filedialog
+from tkinter import ttk, filedialog, messagebox
 from threading import Thread, Event
 try:
     import ctypes
@@ -40,8 +40,9 @@ if os.path.exists(difficulties_path):
         difficulties = json.load(f)
 config = {
     "apk_path": "",
+    "check_md5": True,
     "extra_illustration": False,
-    "check_md5": True
+    "audio_format": "WAV"
 }
 if os.path.exists("config.json"):
     with open("config.json", "r", encoding="utf-8") as f:
@@ -176,7 +177,8 @@ def get_download_data():
         result = json.loads(response.read().decode("utf-8"))
     return result["data"]["apk"]
 
-def generate_yaml(song, index):
+def generate_yaml(song, index, audio_format=None):
+    if audio_format == None: audio_format = config["audio_format"]
     data = {
         "name": song.name,
         "difficulty": song.difficulty[index],
@@ -186,7 +188,7 @@ def generate_yaml(song, index):
         "illustrator": song.illustrator,
         "chart": "chart.json",
         "format": "pgr",
-        "music": "music.wav",
+        "music": f"music.{audio_format.lower()}",
         "illustration": "illustration.jpg",
         "previewStart": song.preview_time,
         "previewEnd": song.preview_end_time
@@ -248,6 +250,22 @@ def get_content(data, suffix):
         buf = io.BytesIO()
         data.image.convert("RGB").save(buf, "JPEG")
         return buf.getvalue()
+
+def convert_audio(content, audio_format):
+    if audio_format == "WAV": return content
+    if audio_format not in ["OGG", "MP3"]:
+        raise ValueError(f"Unknown audio format {audio_format}")
+    try:
+        import soundfile
+    except ImportError as e:
+        raise ImportError("OGG/MP3 export requires soundfile") from e
+    samples, sample_rate = soundfile.read(io.BytesIO(content), dtype="float32", always_2d=True)
+    buf = io.BytesIO()
+    if audio_format == "OGG":
+        soundfile.write(buf, samples, sample_rate, format="OGG", subtype="VORBIS")
+    else:
+        soundfile.write(buf, samples, sample_rate, format="MP3")
+    return buf.getvalue()
 
 def load_assets(apk_path, check_changes=False):
     global assets_only
@@ -547,7 +565,7 @@ def download():
                 event = Event()
                 def ask_replace():
                     nonlocal replace
-                    replace = tk.messagebox.askyesno("确认", f"已存在文件: {apk_name}，是否替换？")
+                    replace = messagebox.askyesno("确认", f"已存在文件: {apk_name}, 是否替换？")
                     event.set()
                 root.after(0, ask_replace)
                 event.wait()
@@ -654,6 +672,7 @@ def export():
         set_info("导出失败: 未选择候选曲目")
         return
     selected_indexes = [output_indexes[i] for i in selection] # selected output_indexes, will not be modified
+    audio_format = config["audio_format"]
     set_buttons_state("disabled")
 
     def worker():
@@ -667,7 +686,7 @@ def export():
                 for count, (song_id, index) in enumerate(selected_indexes, start=1):
                     song = songs[song_id]
                     data = get_data(zf, song.music[index] or song.default_music, f"music for song {song.name} {song.levels[index]}")
-                    output_music = get_content(data, ".wav")
+                    output_music = convert_audio(get_content(data, ".wav"), audio_format)
                     data = get_data(zf, song.charts[index], f"chart for song {song.name} {song.levels[index]}")
                     output_chart = get_content(data, ".json")
                     data = get_data(zf, song.illustration[index] or song.default_illustration, f"illustration for song {song.name}")
@@ -678,18 +697,20 @@ def export():
                         data = get_data(zf, song.illustration_blur[index] or song.default_illustration_blur, f"illustrationBlur for song {song.name}")
                         output_illustration_blur = get_content(data, ".jpg")
                     with ZipFile(f"output/[{song.levels[index]} {song.difficulty[index]:.1f}] {sanitize_windows(song.name)} ({song_id}).zip", "w", compression=ZIP_DEFLATED) as output_zf:
-                        output_zf.writestr("music.wav", output_music)
+                        output_zf.writestr(f"music.{audio_format.lower()}", output_music)
                         output_zf.writestr("chart.json", output_chart)
                         output_zf.writestr("illustration.jpg", output_illustration)
                         if config["extra_illustration"]:
                             output_zf.writestr("illustrationLowRes.jpg", output_illustration_lowres)
                             output_zf.writestr("illustrationBlur.jpg", output_illustration_blur)
-                        output_zf.writestr("info.yml", generate_yaml(song, index))
+                        output_zf.writestr("info.yml", generate_yaml(song, index, audio_format))
                     root.after(0, lambda cnt=count: progress_bar.config(value=cnt))
                     root.after(0, lambda cnt=count: set_info(f"正在导出: {cnt}/{len(selected_indexes)}"))
         except Exception as e:
             print(f"Error: Failed to export: {type(e).__name__}: {e}")
             traceback.print_exc()
+            if isinstance(e, ImportError):
+                root.after(0, lambda: messagebox.showerror("缺少可选依赖", "OGG/MP3 导出需要 soundfile, 请执行: python -m pip install soundfile"))
             root.after(0, lambda: set_info("导出失败"))
             root.after(0, lambda: set_buttons_state("normal"))
         else:
@@ -728,20 +749,27 @@ def settings():
     window.columnconfigure(0, weight=1)
 
     def apply():
-        config["extra_illustration"] = extra_illustration_var.get()
         config["check_md5"] = check_md5_var.get()
+        config["extra_illustration"] = extra_illustration_var.get()
+        config["audio_format"] = audio_format_var.get()
         save_config()
         window.destroy()
 
     settings_frame = ttk.Frame(window)
     settings_frame.grid(row=0, column=0, padx=10, pady=10, sticky="w")
     #
-    extra_illustration_var = tk.BooleanVar(value=config["extra_illustration"]) # export illustrationLowRes and illustrationBlur
-    extra_illustration_check = ttk.Checkbutton(settings_frame, text="导出 LowRes/Blur 曲绘", variable=extra_illustration_var)
-    extra_illustration_check.grid(row=0, column=0, sticky="w")
     check_md5_var = tk.BooleanVar(value=config["check_md5"])
     check_md5_check = ttk.Checkbutton(settings_frame, text="下载后校验 MD5", variable=check_md5_var)
-    check_md5_check.grid(row=1, column=0, sticky="w")
+    check_md5_check.grid(row=0, column=0, sticky="w")
+    extra_illustration_var = tk.BooleanVar(value=config["extra_illustration"]) # export illustrationLowRes and illustrationBlur
+    extra_illustration_check = ttk.Checkbutton(settings_frame, text="导出 LowRes/Blur 曲绘", variable=extra_illustration_var)
+    extra_illustration_check.grid(row=1, column=0, sticky="w")
+    audio_frame = ttk.Frame(settings_frame)
+    audio_frame.grid(row=2, column=0, sticky="w")
+    ttk.Label(audio_frame, text="音频格式: ").grid(row=0, column=0, sticky="w")
+    audio_format_var = tk.StringVar(value=config["audio_format"])
+    audio_format_combo = ttk.Combobox(audio_frame, textvariable=audio_format_var, values=["WAV", "OGG", "MP3"], state="readonly", width=6)
+    audio_format_combo.grid(row=0, column=1, sticky="w")
 
     setting_buttons_frame = ttk.Frame(window)
     setting_buttons_frame.grid(row=1, column=0, padx=10, pady=(0,10), sticky="ew")
