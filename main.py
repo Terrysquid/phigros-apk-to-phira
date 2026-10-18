@@ -40,7 +40,8 @@ if os.path.exists(difficulties_path):
         difficulties = json.load(f)
 config = {
     "apk_path": "",
-    "extra_illustration": True
+    "extra_illustration": False,
+    "check_md5": True
 }
 if os.path.exists("config.json"):
     with open("config.json", "r", encoding="utf-8") as f:
@@ -528,6 +529,7 @@ def set_path():
     path_var.set(apk_path)
 
 def download():
+    check_md5 = config["check_md5"]
     set_buttons_state("disabled")
 
     def worker():
@@ -559,18 +561,18 @@ def download():
             with urllib.request.urlopen(download_url) as response:
                 total = download_data["size"]
                 downloaded = 0
-                file_md5 = hashlib.md5()
+                if check_md5: file_md5 = hashlib.md5()
                 with open(apk_path, "wb") as f:
                     while True:
                         chunk = response.read(1048576)
                         if not chunk: break
                         f.write(chunk)
-                        file_md5.update(chunk)
+                        if check_md5: file_md5.update(chunk)
                         downloaded += len(chunk)
                         count = floor(downloaded / total * 100)
                         root.after(0, lambda cnt=count: progress_bar.config(value=cnt))
                         root.after(0, lambda cnt=count: set_info(f"正在下载: {cnt}%"))
-            if file_md5.hexdigest().lower() != download_data["md5"].lower():
+            if check_md5 and file_md5.hexdigest().lower() != download_data["md5"].lower():
                 raise ValueError(f"Expected MD5 {download_data['md5']}, got {file_md5.hexdigest()}")
             config["apk_path"] = apk_path
             save_config()
@@ -727,6 +729,7 @@ def settings():
 
     def apply():
         config["extra_illustration"] = extra_illustration_var.get()
+        config["check_md5"] = check_md5_var.get()
         save_config()
         window.destroy()
 
@@ -736,6 +739,9 @@ def settings():
     extra_illustration_var = tk.BooleanVar(value=config["extra_illustration"]) # export illustrationLowRes and illustrationBlur
     extra_illustration_check = ttk.Checkbutton(settings_frame, text="导出 LowRes/Blur 曲绘", variable=extra_illustration_var)
     extra_illustration_check.grid(row=0, column=0, sticky="w")
+    check_md5_var = tk.BooleanVar(value=config["check_md5"])
+    check_md5_check = ttk.Checkbutton(settings_frame, text="下载后校验 MD5", variable=check_md5_var)
+    check_md5_check.grid(row=1, column=0, sticky="w")
 
     setting_buttons_frame = ttk.Frame(window)
     setting_buttons_frame.grid(row=1, column=0, padx=10, pady=(0,10), sticky="ew")
