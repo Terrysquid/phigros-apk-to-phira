@@ -278,7 +278,12 @@ def load_assets(apk_path, check_changes=False):
                 for obj in env.objects:
                     if obj.type.name != "MonoBehaviour": continue
                     data = obj.read(check_read=False)
-                    if data.m_Script.read().m_Name == "GameInformation":
+                    if data.m_Script.m_PathID == 0: continue
+                    try:
+                        script_name = data.m_Script.read().m_Name
+                    except FileNotFoundError:
+                        continue
+                    if script_name == "GameInformation":
                         get_typetree_version_code = lambda path: int(re.fullmatch(r"typetree_(\d+).*\.json", path.name)[1])
                         version_code = get_version_code(apk_path)
                         if version_code != None: print(f"Info: Got version code {version_code}")
@@ -302,7 +307,7 @@ def load_assets(apk_path, check_changes=False):
                             raise ValueError("All typetrees failed")
                         break
                 if game_information != None: break
-            assert game_information != None, "GameInformation not found"
+        if game_information != None:
             for k,v in game_information["song"].items():
                 for i in v:
                     song_id = i["songsId"]
