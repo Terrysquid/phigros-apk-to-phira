@@ -29,6 +29,7 @@ if os.path.exists(song_ids_path):
         song_ids = set(json.load(f))
 new_song_ids = set()
 new_charts = set()
+changed_charts = set()
 assets_only = False
 asset_hashes = {}
 if os.path.exists(asset_hashes_path):
@@ -274,6 +275,7 @@ def load_assets(apk_path, check_changes=False):
     if check_changes:
         new_song_ids.clear()
         new_charts.clear()
+        changed_charts.clear()
     with GameZip(apk_path) as zf:
         with zf.open("assets/aa/catalog.json") as f:
             j = json.load(f)
@@ -448,9 +450,10 @@ def load_assets(apk_path, check_changes=False):
                     if song_id not in new_song_ids and old_hash != new_hash:
                         if old_hash == None:
                             print(f"Info: New asset found: {key}")
+                            new_charts.add((song_id, level))
                         else:
                             print(f"Info: Asset changed: {key}")
-                        new_charts.add((song_id, level))
+                            changed_charts.add((song_id, level))
                     asset_hashes[key] = new_hash
             elif suffix in [".jpg",".png"]:
                 if stem.lower() == "illustration": song.default_illustration = path
@@ -477,7 +480,8 @@ def load_assets(apk_path, check_changes=False):
             json.dump({
                 "file": file_info(apk_path),
                 "new_song_ids": list(new_song_ids),
-                "new_charts": [list(i) for i in new_charts]
+                "new_charts": [list(i) for i in new_charts],
+                "changed_charts": [list(i) for i in changed_charts]
             }, f, ensure_ascii=False, indent=2)
 def search():
     output_id = id_var.get()
@@ -507,7 +511,10 @@ def search():
             is_other = level not in ["EZ", "HD", "IN", "AT"] or (not assets_only and difficulty == 0)
             if output_levels and not (level in output_levels or (is_other and "Other" in output_levels)): continue
             if not (output_difficulty_min <= difficulty <= output_difficulty_max): continue
-            if (new_song_var.get() or new_chart_var.get()) and not ((new_song_var.get() and song_id in new_song_ids) or (new_chart_var.get() and (song_id, level) in new_charts)): continue
+            if new_song_var.get() or new_chart_var.get() or changed_chart_var.get():
+                if not ((new_song_var.get() and song_id in new_song_ids)
+                        or (new_chart_var.get() and (song_id, level) in new_charts)
+                        or (changed_chart_var.get() and (song_id, level) in changed_charts)): continue
             if song.charts[index] == "": continue # use "no chart" as filter condition instead of "difficulty = 0"
             output_indexes.append((song_id,index))
             candidates_listbox.insert(tk.END, f"[{level} {difficulty:.1f}] {song.name} ({song_id})")
@@ -524,6 +531,7 @@ def clear_search():
     difficulty_max_var.set("")
     new_song_var.set(False)
     new_chart_var.set(False)
+    changed_chart_var.set(False)
     search()
 
 def save_config():
@@ -620,12 +628,14 @@ def load():
     try:
         with open(checked_apk_path, "r", encoding="utf-8") as f:
             checked_apk = json.load(f)
-            check_changes = checked_apk.get("file") != file_info(apk_path)
+            check_changes = checked_apk.get("file") != file_info(apk_path) or "changed_charts" not in checked_apk
             if not check_changes:
                 new_song_ids.clear()
                 new_song_ids.update(checked_apk.get("new_song_ids", []))
                 new_charts.clear()
                 new_charts.update([tuple(i) for i in checked_apk.get("new_charts", [])])
+                changed_charts.clear()
+                changed_charts.update([tuple(i) for i in checked_apk.get("changed_charts", [])])
     except:
         check_changes = True
     songs.clear()
@@ -799,6 +809,7 @@ def set_buttons_state(state):
     difficulty_max_entry.config(state=state)
     new_song_check.config(state=state)
     new_chart_check.config(state=state)
+    changed_chart_check.config(state=state)
     clear_button.config(state=state)
     search_button.config(state=state)
     candidates_listbox.config(state=state)
@@ -875,11 +886,15 @@ misc_frame.grid(row=3, column=1, sticky="w")
 new_song_var = tk.BooleanVar(value=False)
 new_song_check = ttk.Checkbutton(misc_frame, text="新曲", variable=new_song_var, command=search)
 new_song_check.grid(row=0, column=0, sticky="w")
-ToolTip(new_song_check, "检查并加载时发现的新曲")
+ToolTip(new_song_check, "首次记录的曲目")
 new_chart_var = tk.BooleanVar(value=False)
-new_chart_check = ttk.Checkbutton(misc_frame, text="新谱/改谱", variable=new_chart_var, command=search)
+new_chart_check = ttk.Checkbutton(misc_frame, text="新谱", variable=new_chart_var, command=search)
 new_chart_check.grid(row=0, column=1, sticky="w")
-ToolTip(new_chart_check, "检查并加载时发现的新谱/改谱")
+ToolTip(new_chart_check, "已有曲目中首次记录的谱面")
+changed_chart_var = tk.BooleanVar(value=False)
+changed_chart_check = ttk.Checkbutton(misc_frame, text="改谱", variable=changed_chart_var, command=search)
+changed_chart_check.grid(row=0, column=2, sticky="w")
+ToolTip(changed_chart_check, "已有曲目中发生变化的谱面")
 #
 clear_button = ttk.Button(search_frame, text="清空", width=6, command=clear_search)
 clear_button.grid(row=3, column=2, sticky="e")

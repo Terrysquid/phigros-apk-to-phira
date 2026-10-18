@@ -19,8 +19,9 @@ Extract files from Phigros APK/XAPK and create zips for Phira.
          - `Other` 包含 `Legacy` 等特殊难度
       - 筛选定数范围
       - 高级筛选（需要检查并加载）
-         - 新曲
-         - 新谱 / 改谱
+         - 新曲：首次记录的曲目
+         - 新谱：已有曲目中首次记录的谱面
+         - 改谱：已有曲目中发生变化的谱面
    
    3. **选择曲目**
       - 在候选曲目列表中，
