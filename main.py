@@ -264,6 +264,8 @@ def load_assets(apk_path, check_changes=False):
         print("Info: Input files found")
 
         game_information = None
+        version_code = get_version_code(apk_path)
+        if version_code != None: print(f"Info: Got version code {version_code}")
         if "assets/bin/Data/globalgamemanagers.assets" in zf.files or "assets/bin/Data/data.unity3d" in zf.files:
             if "assets/bin/Data/globalgamemanagers.assets" in zf.files: # has game managers
                 with zf.open("assets/bin/Data/globalgamemanagers.assets") as src:
@@ -285,8 +287,6 @@ def load_assets(apk_path, check_changes=False):
                         continue
                     if script_name == "GameInformation":
                         get_typetree_version_code = lambda path: int(re.fullmatch(r"typetree_(\d+).*\.json", path.name)[1])
-                        version_code = get_version_code(apk_path)
-                        if version_code != None: print(f"Info: Got version code {version_code}")
                         for typetree_path in sorted(Path("typetrees").glob("typetree_*.json"), key=get_typetree_version_code, reverse=True): # extracted using Il2CppDumper and TypeTreeGenerator, from libil2cpp.so and global-metadata.dat
                             typetree_version_code = get_typetree_version_code(typetree_path)
                             if version_code != None and version_code < typetree_version_code:
@@ -299,12 +299,13 @@ def load_assets(apk_path, check_changes=False):
                                 # verify that at least one song exists, and there is one difficulty & charter per level
                                 assert any(game_information["song"].values()) and all(len(i["difficulty"]) == len(i["charter"]) == len(i["levels"]) for v in game_information["song"].values() for i in v)
                             except (ValueError, EOFError, KeyError, TypeError, AssertionError):
+                                game_information = None
                                 print(f"Info: Typetree {typetree_path.name} failed, trying older typetrees")
                                 continue
                             print(f"Info: Typetree {typetree_path.name} succeeded")
                             break
                         else:
-                            raise ValueError("All typetrees failed")
+                            print("Info: No compatible typetree succeeded, using assets-only mode")
                         break
                 if game_information != None: break
         if game_information != None:
@@ -346,7 +347,7 @@ def load_assets(apk_path, check_changes=False):
                         difficulties[song_id] = new
             print(f"Info: {len(songs)} songs found in GameInformation")
         else:
-            print(f"Info: Using assets-only mode due to missing GameInformation")
+            print(f"Info: Using assets-only mode due to missing or unsupported GameInformation")
             assets_only = True
 
         output = []
